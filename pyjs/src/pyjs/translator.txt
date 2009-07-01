@@ -1,0 +1,25 @@
+==========
+Translator
+==========
+
+The python -> javascript translator translates a single module into a
+javascript file. It accepts a list of source files, where each of the
+files is an override of its predecessor.
+
+
+    >>> from pyjs import translator
+
+Let us write a simple module.
+
+    >>> import tempfile, os
+    >>> tmp = tempfile.mkdtemp()
+
+    >>> mymodule = os.path.join(tmp, 'mymodule.py')
+    >>> f = file(mymodule, 'w')
+    >>> f.write("""
+    ... print 1
+    ... """
+    >>> f.close()
+
+    >>> translator.main(mymodule)
+
