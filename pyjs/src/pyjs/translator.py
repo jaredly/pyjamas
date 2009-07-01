@@ -2089,6 +2089,7 @@ def translate(sources, output_file, module_name=None,
                    store_source = store_source,
                   )
     output.close()
+    return t.imported_modules
 
 def merge(tree1, tree2):
     for child in tree2.node:

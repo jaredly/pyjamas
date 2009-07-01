@@ -1,0 +1,42 @@
+===========
+Linker test
+===========
+
+    >>> from pyjs import linker
+
+Let us generate some python code.
+
+    >>> import tempfile, os, shutil
+    >>> tmp = tempfile.mkdtemp()
+
+    >>> lib_path = os.path.join(tmp, 'lib')
+    >>> pp = os.path.join(lib_path, 'mypackage')
+    >>> os.makedirs(pp)
+    >>> mp = os.path.join(pp, '__init__.py')
+    >>> f = file(mp, 'w')
+    >>> f.write("""
+    ... def main():
+    ...     print 1
+    ... """)
+    >>> f.close()
+    >>> mp = os.path.join(pp, 'index.py')
+    >>> f = file(mp, 'w')
+    >>> f.write("""
+    ... def main():
+    ...     print 1
+    ... """)
+    >>> f.close()
+
+    >>> output = os.path.join(tmp, 'output')
+    >>> l = linker.BrowserLinker('mypackage.index',
+    ...                          output=output,
+    ...                          platforms=['ie6'],
+    ...                          path=[lib_path])
+
+    >>> l()
+
+    >>> out_file = os.path.join(output, 'mypackage.index.ie6.cache.html')
+    >>> print file(out_file).read()
+
+
+    >>> shutil.rmtree(tmp)
