@@ -2046,9 +2046,8 @@ pyjslib.getattr(%(attr_left)s, '%(attr_right)s'):\
             raise TranslationError("unsupported type (in expr)", node)
 
 
-
-def translate(file_name, module_name,
-              debug=False, 
+def translate(sources, output_file, module_name=None,
+              debug=False,
               print_statements = True,
               function_argument_checking=True,
               attribute_checking=True,
@@ -2056,12 +2055,24 @@ def translate(file_name, module_name,
               line_tracking=True,
               store_source=True,
              ):
-    f = file(file_name, "r")
+    sources = map(os.path.abspath, sources)
+    output_file = os.path.abspath(output_file)
+    if not module_name:
+        module_name = os.path.basename(sources[0])[:-3]
+
+    trees = []
+    tree= None
+    for src in sources:
+        current_tree = compiler.parseFile(src)
+        if tree:
+            merge(tree, current_tree)
+        tree = current_tree
+    f = file(sources[0], "r")
     src = f.read()
     f.close()
-    output = StringIO()
-    mod = compiler.parseFile(file_name)
-    t = Translator(module_name, module_name, module_name, src, mod, output,
+    output = file(output_file, 'w')
+
+    t = Translator(module_name, module_name, module_name, src, tree, output,
                    debug = debug,
                    print_statements = print_statements,
                    function_argument_checking = function_argument_checking,
@@ -2070,7 +2081,71 @@ def translate(file_name, module_name,
                    line_tracking = line_tracking,
                    store_source = store_source,
                   )
-    return output.getvalue()
+    output.close()
+
+def merge(tree1, tree2):
+    for child in tree2.node:
+        if isinstance(child, ast.Function):
+            replaceFunction(tree1, child.name, child)
+        elif isinstance(child, ast.Class):
+            replaceClassMethods(tree1, child.name, child)
+        else:
+            raise TranslationError("Do not know how to merge", child)
+    return tree1
+
+def replaceFunction(tree, function_name, function_node):
+    # find function to replace
+    for child in tree.node:
+        if isinstance(child, ast.Function) and child.name == function_name:
+            copyFunction(child, function_node)
+            return
+    raise TranslationError("function not found: " + function_name, function_node)
+
+def copyFunction(target, source):
+    target.code = source.code
+    target.argnames = source.argnames
+    target.defaults = source.defaults
+    target.doc = source.doc # @@@ not sure we need to do this any more
+
+
+def replaceClassMethods(tree, class_name, class_node):
+    # find class to replace
+    old_class_node = None
+    for child in tree.node:
+        if isinstance(child, ast.Class) and child.name == class_name:
+            old_class_node = child
+            break
+
+    if not old_class_node:
+        raise TranslationError("class not found: " + class_name, class_node)
+
+    # replace methods
+    for node in class_node.code:
+        if isinstance(node, ast.Function):
+            found = False
+            for child in old_class_node.code:
+                if isinstance(child, ast.Function) and child.name == node.name:
+                    found = True
+                    copyFunction(child, node)
+                    break
+
+            if not found:
+                raise TranslationError("class method not found: " + class_name + "." + node.name, node)
+        elif isinstance(node, ast.Assign) and \
+             isinstance(node.nodes[0], ast.AssName):
+            found = False
+            for child in old_class_node.code:
+                if isinstance(child, ast.Assign) and \
+                    eqNodes(child.nodes, node.nodes):
+                    found = True
+                    copyAssign(child, node)
+            if not found:
+                addCode(old_class_node.code, node)
+        elif isinstance(node, ast.Pass):
+            pass
+        else:
+            raise TranslationError("Do not know how to merge %s" % node, node)
+
 
 
 class PlatformParser:
@@ -2256,11 +2331,9 @@ class AppTranslator:
 
         raise Exception("file not found: " + file_name)
 
-    def _translate(self, module_name, is_app=True, debug=False,
-                   imported_js=set()):
-        if module_name not in self.library_modules:
-            self.library_modules.append(module_name)
-
+    def _translate(self, module_name, debug=False):
+        self.library_modules.append(module_name)
+        
         file_name = self.findFile(module_name + self.extension)
 
         output = StringIO()
@@ -2274,10 +2347,6 @@ class AppTranslator:
             override_name = "%s.%s" % (self.parser.platform.lower(),
                                            module_name)
             self.overrides[override_name] = override_name
-        if is_app:
-            mn = '__main__'
-        else:
-            mn = module_name
         t = Translator(mn, module_name, module_name, src, mod, output, 
                        self.dynamic, self.findFile, 
                        debug = self.debug,
@@ -2290,7 +2359,6 @@ class AppTranslator:
                       )
 
         module_str = output.getvalue()
-        imported_js.update(set(t.imported_js))
         imported_modules_str = ""
         for module in t.imported_modules:
             if module not in self.library_modules:

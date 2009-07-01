@@ -14,12 +14,25 @@ Let us write a simple module.
     >>> import tempfile, os
     >>> tmp = tempfile.mkdtemp()
 
-    >>> mymodule = os.path.join(tmp, 'mymodule.py')
-    >>> f = file(mymodule, 'w')
+    >>> mymodule1 = os.path.join(tmp, 'mymodule1.py')
+    >>> out_file = os.path.join(tmp, 'mymodule.js')
+    >>> f = file(mymodule1, 'w')
     >>> f.write("""
-    ... print 1
-    ... """
+    ... def main():
+    ...     print 1
+    ... """)
     >>> f.close()
 
-    >>> translator.main(mymodule)
 
+    >>> mymodule2 = os.path.join(tmp, 'mymodule2.py')
+    >>> f = file(mymodule2, 'w')
+    >>> f.write("""
+    ... def main():
+    ...     print 2
+    ... """)
+    >>> f.close()
+
+
+    >>> translator.translate([mymodule1, mymodule2], out_file)
+    >>> print file(out_file).read()
+    var mymodule1 = $pyjs.modules.my...
