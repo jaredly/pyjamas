@@ -1,7 +1,9 @@
 from zope.testing.doctestunit import DocFileSuite
+import doctest
+import unittest
 
 def test_suite():
-    translator = DocFileSuite('translator.txt', tearDown=tearDown,
+    translator = DocFileSuite('translator.txt',
                     optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
                               )
     s = unittest.TestSuite((translator,))
