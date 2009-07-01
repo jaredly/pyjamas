@@ -380,6 +380,12 @@ class Translator:
         print >> self.output, self.spacing() + "}; /* end %s */ \n"  % module_name
         print >>self.output, self.spacing() + UU+"$pyjs.modules_hash['"+module_name+"'] = $pyjs.modules."+module_name+";"
 
+        # print out the deps
+        if self.imported_modules:
+            print >> self.output, '/*'
+            print >> self.output, 'PYJS_DEPS: %s' % self.imported_modules
+            print >> self.output, '*/'
+
     def uniqid(self, prefix = ""):
         if not self.__unique_ids__.has_key(prefix):
             self.__unique_ids__[prefix] = 0
@@ -510,7 +516,6 @@ class Translator:
 """ % ({'s': self.spacing(), 'p': parentName, 'd': dynamic, 'n': importName})
 
     def add_imported_module(self, importName):
-
         names = importName.split(".")
         if not importName in self.imported_modules:
             self.imported_modules.append(importName)
@@ -521,10 +526,10 @@ class Translator:
             if not _importName in self.imported_modules:
                 self.imported_modules.append(_importName)
             _importName += '.'
-        print >> self.output, self.gen_mod_import(self.raw_module_name,
-                                                 strip_py(importName),
-                                                 self.dynamic)
-        return
+        #print >> self.output, self.gen_mod_import(self.raw_module_name,
+        #                                          strip_py(importName),
+        #                                          self.dynamic)
+
 
     def md5(self, node):
         return md5.new(self.raw_module_name + str(node.lineno) + repr(node)).hexdigest()
@@ -831,25 +836,19 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
         for importName, importAs in node.names:
             if importName == '__pyjamas__': # special module to help make pyjamas modules loadable in the python interpreter
                 pass
-            elif importName.endswith('.js'):
-                self.imported_js.add(importName)
             else:
-                importName = strip_py(importName)
                 self.add_imported_module(importName)
                 if importAs:
                     assignName = importAs
-                    rhs = "$pyjs.modules." + importName
+                    lhs = UU+"%s.%s" % (self.raw_module_name,
+                                        assignName)
+                    stmt = "%s = pyjslib.__import__('%s', %s)" % (lhs,
+                                                                  importName,
+                                                                  self.raw_module_name)
                 else:
-                    assignName = importName.split('.')[0]
-                    rhs = "$pyjs.modules." + importName.split('.')[0]
-                if len(self.lookup_stack) == 1:
-                    lhs = UU+"%s.%s" % (self.raw_module_name, assignName)
-                    vdec = ''
-                else:
-                    lhs = assignName
-                    vdec = 'var '
-                lhs = self.add_lookup('import', assignName, lhs)
-                print >> self.output, self.spacing() + "%s%s = %s;" % (vdec, lhs, rhs)
+                    stmt = "pyjslib.__import__('%s', %s)" % (importName,
+                                                             self.raw_module_name)
+                print >> self.output, self.spacing(), stmt
 
     def _function(self, node, local=False):
         self.push_options()
@@ -1663,29 +1662,37 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
             # the python interpreter
             return
         self.add_imported_module(node.modname)
+        stmt = "pyjslib.__import__('%s', %s)" % (node.modname,
+                                                 self.raw_module_name)
+        print >> self.output, self.spacing(), stmt
         for name in node.names:
-            # look up "hack" in AppTranslator as to how findFile gets here
-            module_name = node.modname + "." + name[0]
-            if name[1]:
-                assignName = name[1]
-            else:
-                assignName = name[0]
-            rhs = "$pyjs.modules." + module_name
-            try:
-                ff = self.findFile(module_name + ".py")
-            except Exception:
-                ff = None
-            if ff:
-                self.add_imported_module(module_name)
+            ass_name = name[1] or name[0]
+            lhs = UU+"%s.%s" % (self.raw_module_name, ass_name)
+            rhs = '.'.join((node.modname, name[0]))
+            print >> self.output, self.spacing(), "%s = %s;" % (lhs, rhs)
 
-            if len(self.lookup_stack) == 1:
-                lhs = UU+"%s.%s" % (self.raw_module_name, assignName)
-                vdec = ''
-            else:
-                lhs = assignName
-                vdec = 'var '
-            lhs = self.add_lookup('import', assignName, lhs)
-            print >> self.output, self.spacing() + "%s%s = %s;" % (vdec, lhs, rhs)
+#             # look up "hack" in AppTranslator as to how findFile gets here
+#             module_name = node.modname + "." + name[0]
+#             if name[1]:
+#                 assignName = name[1]
+#             else:
+#                 assignName = name[0]
+#             rhs = "$pyjs.modules." + module_name
+#             try:
+#                 ff = self.findFile(module_name + ".py")
+#             except Exception:
+#                 ff = None
+#             if ff:
+#                 self.add_imported_module(module_name)
+
+#             if len(self.lookup_stack) == 1:
+#                 lhs = UU+"%s.%s" % (self.raw_module_name, assignName)
+#                 vdec = ''
+#             else:
+#                 lhs = assignName
+#                 vdec = 'var '
+#             lhs = self.add_lookup('import', assignName, lhs)
+#             print >> self.output, self.spacing() + "%s%s = %s;" % (vdec, lhs, rhs)
 
     def _compare(self, node, current_klass):
         lhs = self.expr(node.expr, current_klass)

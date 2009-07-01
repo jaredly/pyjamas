@@ -24,6 +24,24 @@ Let us write a simple module.
     >>> f.close()
 
 
+Compile our module.
+
+    >>> translator.translate([mymodule1], out_file,
+    ...                      debug=False,
+    ...                      print_statements = True,
+    ...                      function_argument_checking=True,
+    ...                      attribute_checking=True,
+    ...                      source_tracking=False,
+    ...                      line_tracking=False,
+    ...                      store_source=False)
+    >>> print file(out_file).read()
+    var mymodule1 = $pyjs.modules.mymodule1 = function (__mod_name__) {
+    ...
+	pyjslib.printFunc([1], 1);...
+
+
+Let us write an override and rewrite th main function.
+
     >>> mymodule2 = os.path.join(tmp, 'mymodule2.py')
     >>> f = file(mymodule2, 'w')
     >>> f.write("""
@@ -33,6 +51,45 @@ Let us write a simple module.
     >>> f.close()
 
 
-    >>> translator.translate([mymodule1, mymodule2], out_file)
+    >>> translator.translate([mymodule1, mymodule2], out_file,
+    ...                      debug=False,
+    ...                      print_statements = True,
+    ...                      function_argument_checking=True,
+    ...                      attribute_checking=True,
+    ...                      source_tracking=False,
+    ...                      line_tracking=False,
+    ...                      store_source=False)
+
+
+We now get the override.
+
     >>> print file(out_file).read()
-    var mymodule1 = $pyjs.modules.my...
+    var mymodule1 = $pyjs.modules.mymodule1 = function (__mod_name__) {
+    ...
+	pyjslib.printFunc([2], 1);...
+
+
+The import statement just generates js functions, it does not care if
+modules are there.
+
+    >>> imports = os.path.join(tmp, 'imports.py')
+    >>> f = file(imports, 'w')
+    >>> f.write("""
+    ... import a
+    ... import a.b
+    ... from a.b import c
+    ... from x import z as y
+    ... def main():
+    ...     import z as x
+    ... """)
+    >>> f.close()
+
+    >>> translator.translate([imports], out_file,
+    ...                      debug=False,
+    ...                      print_statements = True,
+    ...                      function_argument_checking=True,
+    ...                      attribute_checking=True,
+    ...                      source_tracking=False,
+    ...                      line_tracking=False,
+    ...                      store_source=False)
+    >>> print file(out_file).read()
