@@ -1,6 +1,7 @@
 import translator
 import os
 import sys
+import util
 
 _path_cache= {}
 def module_path(name, path=None):
@@ -86,7 +87,6 @@ class BaseLinker(object):
     def visit_end_platform(self, platform):
         pass
 
-
     def visit_end(self):
         pass
 
@@ -94,6 +94,14 @@ class BrowserLinker(BaseLinker):
 
     def visit_module(self, module_path, overrides, platform=None,
                      module_name=None):
+        # look if we have a public dir
+        dir_name = os.path.dirname(module_path)
+        if not dir_name in self.merged_public:
+            public_folder = os.path.join(dir_name, 'public')
+            if os.path.isdir(public_folder):
+                util.copytree_exists(public_folder,
+                                     self.output)
+                self.merged_public.add(dir_name)
         if platform and overrides:
             out_file = '%s.__%s__.js' % (module_path[:-3], platform)
         else:
@@ -115,6 +123,7 @@ class BrowserLinker(BaseLinker):
     def visit_start(self):
         if not os.path.exists(self.output):
             os.makedirs(self.output)
+        self.merged_public = set()
 
     def visit_end_platform(self, platform):
         if not platform:

@@ -15,8 +15,7 @@ Let us generate some python code.
     >>> mp = os.path.join(pp, '__init__.py')
     >>> f = file(mp, 'w')
     >>> f.write("""
-    ... def main():
-    ...     print 1
+    ... # package
     ... """)
     >>> f.close()
     >>> mp = os.path.join(pp, 'index.py')
@@ -37,6 +36,61 @@ Let us generate some python code.
 
     >>> out_file = os.path.join(output, 'mypackage.index.ie6.cache.html')
     >>> print file(out_file).read()
+    var mypackage = $pyjs.modules.mypackage = function (__mod_name__)...
 
+
+    >>> print sorted(os.listdir(output))
+    ['mypackage.index.ie6.cache.html']
+
+Let us add another package with some public folder.
+
+    >>> pp = os.path.join(lib_path, 'second_package')
+    >>> os.makedirs(pp)
+    >>> mp = os.path.join(pp, '__init__.py')
+    >>> f = file(mp, 'w')
+    >>> f.write("""
+    ... # package
+    ... """)
+    >>> f.close()
+    >>> mp = os.path.join(pp, 'widget.py')
+    >>> f = file(mp, 'w')
+    >>> f.write("""
+    ... # do something
+    ... """)
+    >>> f.close()
+    >>> p_dir = os.path.join(pp, 'public')
+    >>> os.mkdir(p_dir)
+    >>> mp = os.path.join(p_dir, 'second.css')
+    >>> f = file(mp, 'w')
+    >>> f.write("""
+    ... /* some css */
+    ... """)
+    >>> f.close()
+
+    >>> l()
+
+Public folders are merged together, but only if something of the
+package gets imported, which is not the case in this example right
+now.
+
+    >>> print sorted(os.listdir(output))
+    ['mypackage.index.ie6.cache.html']
+
+So let us add an import.
+
+    >>> mp = os.path.join(lib_path, 'mypackage', 'index.py')
+    >>> f = file(mp, 'w')
+    >>> f.write("""
+    ... import second_package.widget
+    ... def main():
+    ...     print 1
+    ... """)
+    >>> f.close()
+
+Now we have the contents of the public folder in our output directory.
+
+    >>> l()
+    >>> print sorted(os.listdir(output))
+    ['mypackage.index.ie6.cache.html', 'second.css']
 
     >>> shutil.rmtree(tmp)
