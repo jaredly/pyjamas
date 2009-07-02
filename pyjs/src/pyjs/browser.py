@@ -24,8 +24,16 @@ adapting this to suit your requirements
 
 class BrowserLinker(linker.BaseLinker):
 
-    def visit_module(self, module_path, overrides, platform=None,
-                     module_name=None):
+    def visit_start(self):
+        self.boilerplate_path = None
+        self.js_libs.append('_pyjs.js')
+        if not os.path.exists(self.output):
+            os.makedirs(self.output)
+        self.merged_public = set()
+        self.visited_modules = {}
+
+    def visit_module(self, module_path, overrides, platform,
+                     module_name):
         # look if we have a public dir
         dir_name = os.path.dirname(module_path)
         if not dir_name in self.merged_public:
@@ -51,14 +59,9 @@ class BrowserLinker(linker.BaseLinker):
             self.done[platform].append(out_file)
         else:
             self.done[platform] = [out_file]
+        if module_name not in self.visited_modules.setdefault(platform, []):
+            self.visited_modules[platform].append(module_name)
         self.visit_modules(deps, platform)
-
-    def visit_start(self):
-        self.boilerplate_path = None
-        self.js_libs.append('_pyjs.js')
-        if not os.path.exists(self.output):
-            os.makedirs(self.output)
-        self.merged_public = set()
 
     def visit_end_platform(self, platform):
         if not platform:
@@ -103,16 +106,17 @@ class BrowserLinker(linker.BaseLinker):
             f = file(p)
             app_code.write(f.read())
             f.close()
-
         scripts = ['<script type="text/javascript" src="%s"></script>'%script \
                    for script in self.js_libs]
         app_body = '\n'.join(scripts)
+        deps = []
         file_contents = template % dict(
             app_name = self.top_module,
             early_app_libs = '',
             app_libs = app_code.getvalue(),
             app_body = app_body,
             platform = platform.lower(),
+            available_modules = self.visited_modules[platform],
             dynamic = 0,
             app_headers = ''
         )
