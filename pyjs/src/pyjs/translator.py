@@ -1661,7 +1661,6 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
             # special module to help make pyjamas modules loadable in 
             # the python interpreter
             return
-        import pdb;pdb.set_trace()
         self.add_imported_module(node.modname)
         stmt = "pyjslib.__import__('%s', %s)" % (node.modname,
                                                  self.raw_module_name)
