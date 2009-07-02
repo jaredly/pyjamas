@@ -2,6 +2,9 @@ import os
 from pyjs import linker
 from pyjs import translator
 from pyjs import util
+from cStringIO import StringIO
+
+BOILERPLATE_PATH = os.path.join(os.path.dirname(__file__), 'boilerplate')
 
 APP_HTML_TEMPLATE = """\
 <html>
@@ -49,7 +52,9 @@ class BrowserLinker(linker.BaseLinker):
             self.done[platform] = [out_file]
         self.visit_modules(deps, platform)
 
+
     def visit_start(self):
+        self.boilerplate_path = None
         if not os.path.exists(self.output):
             os.makedirs(self.output)
         self.merged_public = set()
@@ -57,22 +62,62 @@ class BrowserLinker(linker.BaseLinker):
     def visit_end_platform(self, platform):
         if not platform:
             return
-        done = self.done[platform]
-        out_path = os.path.join(
-            self.output,
-            '.'.join((self.top_module, platform, 'cache.html')))
-        out_file = file(out_path, 'w')
-        for p in done:
-            f = file(p)
-            out_file.write(f.read())
-            f.close()
-        out_file.close()
+        self._generate_app_file(platform)
 
     def visit_end(self):
         html_output_filename = os.path.join(self.output, self.top_module + '.html')
         if not os.path.exists(html_output_filename):
             # autogenerate
             self._create_app_html(html_output_filename)
+
+
+    def find_boilerplate(self, name):
+        if not self.boilerplate_path:
+            self.boilerplate_path = [BOILERPLATE_PATH]
+            module_bp_path = os.path.join(
+                os.path.dirname(self.top_module_path), 'boilerplate')
+            if os.path.isdir(module_bp_path):
+                self.boilerplate_path.insert(0, module_bp_path)
+        for p in self.boilerplate_path:
+            bp =  os.path.join(p, name)
+            if os.path.exists(bp):
+                return bp
+        raise RuntimeError("Boilerplate not found %r" % name)
+
+    def read_boilerplate(self, name):
+        f = file(self.find_boilerplate(name))
+        res = f.read()
+        f.close()
+        return res
+
+    def _generate_app_file(self, platform):
+        # TODO: cache busting
+        template = self.read_boilerplate('all.cache.html')
+        done = self.done[platform]
+        out_path = os.path.join(
+            self.output,
+            '.'.join((self.top_module, platform, 'cache.html')))
+        app_code = StringIO()
+        for p in done:
+            f = file(p)
+            app_code.write(f.read())
+            f.close()
+
+        scripts = ['<script type="text/javascript" src="%s"></script>'%script \
+                   for script in self.js_libs]
+        app_body = '\n'.join(scripts)
+        file_contents = template % dict(
+            app_name = self.top_module,
+            early_app_libs = '',
+            app_libs = app_code.getvalue(),
+            app_body = app_body,
+            platform = platform.lower(),
+            dynamic = 0,
+            app_headers = ''
+        )
+        out_file = file(out_path, 'w')
+        out_file.write(file_contents)
+        out_file.close()
 
     def _create_app_html(self, file_name):
         """ Checks if a base HTML-file is available in the PyJamas

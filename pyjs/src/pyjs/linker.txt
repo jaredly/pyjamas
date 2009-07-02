@@ -36,6 +36,7 @@ Let us generate some python code.
 
     >>> out_file = os.path.join(output, 'mypackage.index.ie6.cache.html')
     >>> print file(out_file).read()
+    <html>...
     var mypackage = $pyjs.modules.mypackage = function (__mod_name__)...
 
 

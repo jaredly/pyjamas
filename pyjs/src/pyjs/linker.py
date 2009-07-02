@@ -43,6 +43,7 @@ class BaseLinker(object):
         self.platforms = platforms
         self.top_module = top_module
         self.output = os.path.abspath(output)
+        self.js_libs = js_libs
 
     def __call__(self):
         self.done = {}
@@ -69,7 +70,9 @@ class BaseLinker(object):
         for mn in all_names:
             # TODO: check relative
             p = module_path(mn, path=self.path)
-            override_path = None
+            if mn==self.top_module:
+                self.top_module_path = p
+            override_path=None
             if platform:
                 override_path = module_path('__%s__.%s' % (
                     platform, mn))
