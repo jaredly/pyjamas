@@ -8,7 +8,6 @@ BUILTIN_PATH = os.path.join(os.path.dirname(__file__), 'builtin')
 
 _path_cache= {}
 def module_path(name, path):
-    # TODO: check relative
     global _path_cache
     k = (name, tuple(sorted(path)))
     if k in _path_cache:
@@ -74,7 +73,6 @@ class BaseLinker(object):
             all_names.append(mn)
 
         for mn in all_names:
-            # TODO: check relative
             p = module_path(mn, self.path)
             if mn==self.top_module:
                 self.top_module_path = p

@@ -53,6 +53,10 @@ class BrowserLinker(linker.BaseLinker):
                                         out_file,
                                         module_name=module_name)
             self.dependencies[out_file] = deps
+            if '.' in module_name:
+                for i, dep in enumerate(deps):
+                    if linker.module_path(dep, path=[dir_name]):
+                        deps[i] = '.'.join(module_name.split('.')[:-1] + [dep])
         else:
             deps = self.dependencies[out_file]
         if platform in self.done:
