@@ -140,3 +140,62 @@ class BrowserLinker(BaseLinker):
         out_file.close()
 
 
+    def visit_end(self):
+        html_output_filename = os.path.join(self.output, self.top_module + '.html')
+        if not os.path.exists(html_output_filename):
+            # autogenerate
+            self._create_app_html(html_output_filename)
+
+    def _create_app_html(self, file_name):
+        """ Checks if a base HTML-file is available in the PyJamas
+        output directory.
+        If the HTML-file isn't available, it will be created.
+
+        If a CSS-file with the same name is available
+        in the output directory, a reference to this CSS-file
+        is included.
+
+        If no CSS-file is found, this function will look for a special
+        CSS-file in the output directory, with the name
+        "pyjamas_default.css", and if found it will be referenced
+        in the generated HTML-file.
+
+        [thank you to stef mientki for contributing this function]
+        """
+
+        base_html = """\
+        <html>
+        <!-- auto-generated html - you should consider editing and
+        adapting this to suit your requirements
+        -->
+        <head>
+        <meta name="pygwt:module" content="%(modulename)s">
+        %(css)s
+        <title>%(title)s</title>
+        </head>
+        <body bgcolor="white">
+        <script language="javascript" src="pygwt.js"></script>
+        </body>
+        </html>
+        """
+        # if html file in output directory exists, leave it alone.
+        if os.path.exists(file_name):
+            return 0
+        if os.path.exists(
+            os.path.join(self.output, self.top_module + '.css' )):
+            css = "<link rel='stylesheet' href='" + self.top_module + ".css'>"
+        elif os.path.exists(
+            os.path.join(self.output, 'pyjamas_default.css' )):
+            css = "<link rel='stylesheet' href='pyjamas_default.css'>"
+        else:
+            css = ''
+
+        title = 'PyJamas Auto-Generated HTML file ' + self.top_module
+
+        base_html = base_html % {'modulename': self.top_module,
+                                 'title': title, 'css': css}
+
+        fh = open (file_name, 'w')
+        fh.write  (base_html)
+        fh.close  ()
+        return 1
