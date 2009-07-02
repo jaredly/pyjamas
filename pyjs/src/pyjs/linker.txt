@@ -2,7 +2,7 @@
 Linker test
 ===========
 
-    >>> from pyjs import linker
+    >>> from pyjs import browser
 
 Let us generate some python code.
 
@@ -27,7 +27,7 @@ Let us generate some python code.
     >>> f.close()
 
     >>> output = os.path.join(tmp, 'output')
-    >>> l = linker.BrowserLinker('mypackage.index',
+    >>> l = browser.BrowserLinker('mypackage.index',
     ...                          output=output,
     ...                          platforms=['ie6'],
     ...                          path=[lib_path])
