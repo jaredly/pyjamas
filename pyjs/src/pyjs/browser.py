@@ -17,7 +17,7 @@ adapting this to suit your requirements
 <title>%(title)s</title>
 </head>
 <body bgcolor="white">
-<script language="javascript" src="pygwt.js"></script>
+<script language="javascript" src="bootstrap.js"></script>
 </body>
 </html>
 """
@@ -42,7 +42,8 @@ class BrowserLinker(linker.BaseLinker):
             if out_file in self.done.get(platform, []):
                 return
             deps = translator.translate([module_path] +  overrides,
-                                        out_file, module_name=module_name)
+                                        out_file,
+                                        module_name=module_name)
             self.dependencies[out_file] = deps
         else:
             deps = self.dependencies[out_file]
@@ -52,9 +53,9 @@ class BrowserLinker(linker.BaseLinker):
             self.done[platform] = [out_file]
         self.visit_modules(deps, platform)
 
-
     def visit_start(self):
         self.boilerplate_path = None
+        self.js_libs.append('_pyjs.js')
         if not os.path.exists(self.output):
             os.makedirs(self.output)
         self.merged_public = set()
@@ -69,7 +70,7 @@ class BrowserLinker(linker.BaseLinker):
         if not os.path.exists(html_output_filename):
             # autogenerate
             self._create_app_html(html_output_filename)
-
+        self._create_nocache_html()
 
     def find_boilerplate(self, name):
         if not self.boilerplate_path:
@@ -117,6 +118,22 @@ class BrowserLinker(linker.BaseLinker):
         )
         out_file = file(out_path, 'w')
         out_file.write(file_contents)
+        out_file.close()
+
+    def _create_nocache_html(self):
+        # nocache
+        template = self.read_boilerplate('home.nocache.html')
+        out_path = os.path.join(self.output, self.top_module + ".nocache.html")
+        select_tmpl = """O(["true","%%s"],"%s.%%s.cache.html");\n""" % self.top_module
+        script_selectors = StringIO()
+        for platform in self.platforms:
+            script_selectors.write(
+                select_tmpl % (platform, platform))
+        out_file = file(out_path, 'w')
+        out_file.write(template % dict(
+            app_name = self.top_module,
+            script_selectors = script_selectors.getvalue()
+            ))
         out_file.close()
 
     def _create_app_html(self, file_name):

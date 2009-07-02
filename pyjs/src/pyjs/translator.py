@@ -285,6 +285,7 @@ class Translator:
             vdec = ''
         else:
             vdec = 'var '
+        print >>self.output, self.indent(), "/* module: %s */" % module_name
         print >>self.output, self.indent() + UU+"%s%s = $pyjs.modules.%s = function (__mod_name__) {" % (vdec, module_name, module_name)
 
         print >>self.output, self.spacing() + "if("+module_name+".__was_initialized__) return;"

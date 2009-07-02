@@ -3,10 +3,12 @@ import os
 import sys
 import util
 
+LIB_PATH = os.path.join(os.path.dirname(__file__), 'lib')
+BUILTIN_PATH = os.path.join(os.path.dirname(__file__), 'builtin')
+
 _path_cache= {}
-def module_path(name, path=None):
+def module_path(name, path):
     # TODO: check relative
-    path = path or sys.path
     global _path_cache
     k = (name, tuple(sorted(path)))
     if k in _path_cache:
@@ -39,7 +41,7 @@ class BaseLinker(object):
     def __init__(self, top_module, output='output',
                  debug=False, js_libs=[], platforms=[], path=[]):
         self.js_path = os.path.abspath(output)
-        self.path = path
+        self.path = path + [LIB_PATH]
         self.platforms = platforms
         self.top_module = top_module
         self.output = os.path.abspath(output)
@@ -51,6 +53,10 @@ class BaseLinker(object):
         self.visit_start()
         for platform in [None] + self.platforms:
             self.visit_start_platform(platform)
+            old_path = self.path
+            self.path = [BUILTIN_PATH, LIB_PATH]
+            self.visit_modules(['pyjslib'], platform)
+            self.path = old_path
             self.visit_modules([self.top_module], platform)
             self.visit_end_platform(platform)
         self.visit_end()
@@ -69,13 +75,15 @@ class BaseLinker(object):
 
         for mn in all_names:
             # TODO: check relative
-            p = module_path(mn, path=self.path)
+            p = module_path(mn, self.path)
             if mn==self.top_module:
                 self.top_module_path = p
             override_path=None
             if platform:
                 override_path = module_path('__%s__.%s' % (
-                    platform, mn))
+                    platform, mn), self.path)
+            if not p:
+                raise RuntimeError, "Module not found %r" % mn
             if override_path:
                 self.visit_module(p, [override_path], platform, module_name=mn)
             else:

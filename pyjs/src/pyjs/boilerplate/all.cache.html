@@ -38,6 +38,10 @@ $pyjs.trackstack.push($pyjs.track);
 %(early_app_libs)s
 
 
+
+/* app libs */
+%(app_libs)s
+
 /*
  * prepare app system vars
  */
@@ -45,8 +49,6 @@ sys.platform = '%(platform)s';
 sys.appname = '%(app_name)s';
 sys.loadpath = './';
 
-/* app libs */
-%(app_libs)s
 
 var wait_count = 0;
 
@@ -63,8 +65,12 @@ var onExecutionError = function (exception, name) {
           exception.name + ': '  + exception.message + extra);
 };
 
-function %(app_name)s_imported() {
+function app_imported() {
+    //TODO: check if this is really needed
+    $pyjs.modules['pyjslib'] = pyjslib('pyjslib');
     %(app_name)s.__name__ = '__main__';
+    $pyjs.modules['%(app_name)s'] = %(app_name)s('__main__');
+    return;
     try {
         $pyjs.modules['%(app_name)s'] = %(app_name)s('__main__');
     } catch (exception) {
@@ -74,10 +80,13 @@ function %(app_name)s_imported() {
 }
 
 function prepare_app() {
+    app_imported();
      // TODO: we don't need it actually because of the late import call
 }
 
 function pygwtOnLoad(onLoadError, name) {
+     prepare_app();
+     return;
     if (onLoadError != null)
         try {
             prepare_app();

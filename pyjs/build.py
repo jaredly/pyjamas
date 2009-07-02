@@ -267,8 +267,8 @@ def generateAppFiles(data_dir, js_includes, app_name, output, dynamic,
                      app_translator.translate(None, is_app=False,
                                               debug=debug,
                                       library_modules=['dynamicajax.js',
-                                                    '_pyjs.js', 'sys',
-                                                     'pyjslib'])
+                                                       '_pyjs.js', 'sys',
+                                                       'pyjslib'])
         pover[platform].update(app_translator.overrides.items())
         for mname, name in app_translator.overrides.items():
             pd = overrides.setdefault(mname, {})
