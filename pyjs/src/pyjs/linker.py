@@ -76,14 +76,14 @@ class BaseLinker(object):
 
         for mn in all_names:
             p = module_path(mn, self.path)
+            if not p:
+                raise RuntimeError, "Module not found %r" % mn
             if mn==self.top_module:
                 self.top_module_path = p
             override_path=None
             if platform:
                 override_path = module_path('__%s__.%s' % (
                     platform, mn), self.path)
-            if not p:
-                raise RuntimeError, "Module not found %r" % mn
             if override_path:
                 self.visit_module(p, [override_path], platform, module_name=mn)
             else:

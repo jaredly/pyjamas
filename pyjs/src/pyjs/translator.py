@@ -844,6 +844,7 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
                     assignName = importAs
                     lhs = "%s.%s" % (self.raw_module_name,
                                         assignName)
+                    self.add_lookup("variable", assignName, lhs)
                     stmt = "%s = pyjslib.__import__('%s', '%s')" % (lhs,
                                                                   importName,
                                                                   self.raw_module_name)
@@ -1183,7 +1184,7 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
 
     def modpfx(self):
         return strip_py(self.module_prefix)
-        
+
     def _name(self, v, current_klass, top_level=False,
               return_none_for_module=False):
 
@@ -1191,9 +1192,6 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
             name = v.attrname
         else:
             name = v.name
-        if name == 'ilikesillynamesfornicedebugcode':
-            print top_level, current_klass, repr(v)
-            print "error..."
 
         name_type, pyname, jsname, depth, is_local = self.lookup(name)
         if name_type is None:
@@ -1670,6 +1668,7 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
         for name in node.names:
             ass_name = name[1] or name[0]
             lhs = "%s.%s" % (self.raw_module_name, ass_name)
+            self.add_lookup("variable", ass_name, lhs)
             rhs = '.'.join((node.modname, name[0]))
             print >> self.output, self.spacing(), "%s = %s;" % (lhs, rhs)
 

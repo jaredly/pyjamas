@@ -108,3 +108,24 @@ modules are there.
     PYJS_DEPS: ['a', 'a.b', 'x', 'z']
     */
 
+
+    >>> baseclass = os.path.join(tmp, 'baseclass.py')
+    >>> f = file(baseclass, 'w')
+    >>> f.write("""
+    ... from a import b
+    ... from a import c as cc
+    ... print b
+    ... print cc
+    ... """)
+    >>> f.close()
+
+    >>> deps = translator.translate([baseclass], out_file,
+    ...                      debug=False,
+    ...                      print_statements = True,
+    ...                      function_argument_checking=True,
+    ...                      attribute_checking=True,
+    ...                      source_tracking=False,
+    ...                      line_tracking=False,
+    ...                      store_source=False)
+    >>> print file(out_file).read()
+

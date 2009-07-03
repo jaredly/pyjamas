@@ -31,6 +31,7 @@ class BrowserLinker(linker.BaseLinker):
     def visit_start(self):
         self.boilerplate_path = None
         self.js_libs.append('_pyjs.js')
+        self.js_libs.append('sprintf.js')
         if not os.path.exists(self.output):
             os.makedirs(self.output)
         self.merged_public = set()
