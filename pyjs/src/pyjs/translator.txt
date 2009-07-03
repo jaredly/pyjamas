@@ -20,6 +20,8 @@ Let us write a simple module.
     >>> f.write("""
     ... def main():
     ...     print 1
+    ... if __name__=='__main__':
+    ...     main()
     ... """)
     >>> f.close()
 
@@ -34,8 +36,10 @@ Compile our module.
     ...                      source_tracking=False,
     ...                      line_tracking=False,
     ...                      store_source=False)
+    []
     >>> print file(out_file).read()
-    var mymodule1 = $pyjs.modules.mymodule1 = function (__mod_name__) {
+    /* start module: mymodule1 */
+    var mymodule1 = $pyjs.loaded_modules["mymodule1"] = function (__mod_name__) {
     ...
 	pyjslib.printFunc([1], 1);...
 
@@ -59,14 +63,17 @@ Let us write an override and rewrite th main function.
     ...                      source_tracking=False,
     ...                      line_tracking=False,
     ...                      store_source=False)
-
+    []
 
 We now get the override.
 
     >>> print file(out_file).read()
-    var mymodule1 = $pyjs.modules.mymodule1 = function (__mod_name__) {
+    /* start module: mymodule1 */
+    var mymodule1 = $pyjs.loaded_modules["mymodule1"] = function (__mod_name__) {
     ...
 	pyjslib.printFunc([2], 1);...
+    if (pyjslib.bool(pyjslib.eq(mymodule1.__name__, String('__main__')))) {
+    ...
 
 
 The import statement just generates js functions, it does not care if
@@ -92,4 +99,12 @@ modules are there.
     ...                      source_tracking=False,
     ...                      line_tracking=False,
     ...                      store_source=False)
+    ['a', 'a.b', 'x', 'z']
+
     >>> print file(out_file).read()
+    /* start module: imports */
+    ...
+    /*
+    PYJS_DEPS: ['a', 'a.b', 'x', 'z']
+    */
+

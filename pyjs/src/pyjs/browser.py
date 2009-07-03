@@ -59,10 +59,8 @@ class BrowserLinker(linker.BaseLinker):
                         deps[i] = '.'.join(module_name.split('.')[:-1] + [dep])
         else:
             deps = self.dependencies[out_file]
-        if platform in self.done:
+        if out_file not in self.done.setdefault(platform, []):
             self.done[platform].append(out_file)
-        else:
-            self.done[platform] = [out_file]
         if module_name not in self.visited_modules.setdefault(platform, []):
             self.visited_modules[platform].append(module_name)
         self.visit_modules(deps, platform)
@@ -101,11 +99,11 @@ class BrowserLinker(linker.BaseLinker):
     def _generate_app_file(self, platform):
         # TODO: cache busting
         template = self.read_boilerplate('all.cache.html')
-        done = self.done[platform]
         out_path = os.path.join(
             self.output,
             '.'.join((self.top_module, platform, 'cache.html')))
         app_code = StringIO()
+        done = self.done[platform]
         for p in done:
             f = file(p)
             app_code.write(f.read())

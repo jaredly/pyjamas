@@ -10,6 +10,7 @@ var $pyjs = new Object();
 $pyjs.modules = {};
 $pyjs.modules_hash = {};
 $pyjs.available_modules = %(available_modules)s;
+$pyjs.loaded_modules = {};
 $pyjs.options = new Object();
 $pyjs.options.set_all = function (v) {
     $pyjs.options.arg_ignore = v;
@@ -24,13 +25,19 @@ $pyjs.options.set_all(true);
 $pyjs.trackstack = [];
 $pyjs.track = {module:'__main__', lineno: 1};
 $pyjs.trackstack.push($pyjs.track);
+
+/*
+ * prepare app system vars
+ */
+$pyjs.platform = '%(platform)s';
+$pyjs.appname = '%(app_name)s';
+$pyjs.loadpath = './';
+
 </script>
 %(app_headers)s
 </head>
 <body onload="if (parent && parent.__pygwt_webModeFrameOnLoad) parent.__pygwt_webModeFrameOnLoad(window, '%(app_name)s');">
 <font face='arial' size='-1'>This script is part of module</font> <code>%(app_name)s</code>
-
-%(app_body)s
 
 <script><!--
 
@@ -38,18 +45,8 @@ $pyjs.trackstack.push($pyjs.track);
 
 %(early_app_libs)s
 
-
-
 /* app libs */
 %(app_libs)s
-
-/*
- * prepare app system vars
- */
-sys.platform = '%(platform)s';
-sys.appname = '%(app_name)s';
-sys.loadpath = './';
-
 
 var wait_count = 0;
 
@@ -68,9 +65,8 @@ var onExecutionError = function (exception, name) {
 
 function app_imported() {
     //TODO: check if this is really needed
-    $pyjs.modules['pyjslib'] = pyjslib('pyjslib');
-    %(app_name)s.__name__ = '__main__';
-    $pyjs.modules['%(app_name)s'] = %(app_name)s('__main__');
+    pyjslib('pyjslib');
+    pyjslib.__import__('%(app_name)s', '%(app_name)s', '__main__');
     return;
     try {
         $pyjs.modules['%(app_name)s'] = %(app_name)s('__main__');
@@ -100,5 +96,8 @@ function pygwtOnLoad(onLoadError, name) {
 }
 
 --></script>
+
+%(app_body)s
+
 </body>
 </html>

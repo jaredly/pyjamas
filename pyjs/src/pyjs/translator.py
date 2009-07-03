@@ -55,8 +55,6 @@ NATIVE_JS_FUNC_NAME = "JS"
 NATIVE_DOC_FUNC_NAME = "doc"
 NATIVE_WND_FUNC_NAME = "wnd"
 
-UU = ""
-
 PYJSLIB_BUILTIN_FUNCTIONS=("cmp",
                            "map",
                            "filter",
@@ -285,17 +283,17 @@ class Translator:
             vdec = ''
         else:
             vdec = 'var '
-        print >>self.output, self.indent(), "/* module: %s */" % module_name
-        print >>self.output, self.indent() + UU+"%s%s = $pyjs.modules.%s = function (__mod_name__) {" % (vdec, module_name, module_name)
+        print >>self.output, self.spacing() + "/* start module: %s */" % module_name
+        print >>self.output, self.spacing() + '%s%s = $pyjs.loaded_modules["%s"] = function (__mod_name__) {' % (vdec, module_name, module_name)
 
-        print >>self.output, self.spacing() + "if("+module_name+".__was_initialized__) return;"
-        print >>self.output, self.spacing() + UU+module_name+".__was_initialized__ = true;"
-        print >>self.output, self.spacing() + UU+"if (__mod_name__ == null) __mod_name__ = '%s';" % (mn)
-        lhs = UU+"%s.__name__" % raw_module_name
+        print >>self.output, self.spacing() + "if("+module_name+".__was_initialized__) return %s;"% module_name
+        print >>self.output, self.spacing() + module_name+".__was_initialized__ = true;"
+        print >>self.output, self.spacing() + "if (__mod_name__ == null) __mod_name__ = '%s';" % (mn)
+        lhs = "%s.__name__" % raw_module_name
         self.add_lookup('variable', '__name__', lhs)
         print >>self.output, self.spacing() + "var __name__ = %s = __mod_name__;" % (lhs)
         if self.source_tracking:
-            print >> self.output, self.spacing() + UU+"%s.__track_lines__ = new Array();" % raw_module_name
+            print >> self.output, self.spacing() + "%s.__track_lines__ = new Array();" % raw_module_name
 
         decl = mod_var_name_decl(raw_module_name)
         if decl:
@@ -304,7 +302,7 @@ class Translator:
         save_output = self.output
         buffered_output = StringIO()
         self.output = buffered_output
-        
+
         if self.attribute_checking and not raw_module_name in ['sys', 'pyjslib']:
             attribute_checking = True
             print >>self.output, self.indent() + 'try {'
@@ -371,15 +369,18 @@ class Translator:
         self.output = save_output
         if self.source_tracking and self.store_source:
             for l in self.track_lines.keys():
-                print >> self.output, self.spacing() + UU+'''%s.__track_lines__[%d] = "%s";''' % (raw_module_name, l, self.track_lines[l].replace('"', '\"'))
+                print >> self.output, self.spacing() + '''%s.__track_lines__[%d] = "%s";''' % (raw_module_name, l, self.track_lines[l].replace('"', '\"'))
 
         print >> self.output, buffered_output.getvalue()
         if attribute_checking:
-            print >> self.output, self.dedent() + "} catch (pyjs_attr_err) {throw pyjslib._errorMapping(pyjs_attr_err)};"
+            print >> self.output, self.spacing() + "} catch (pyjs_attr_err) {throw pyjslib._errorMapping(pyjs_attr_err)};"
 
-        print >> self.output, self.dedent() + "return this;"
-        print >> self.output, self.spacing() + "}; /* end %s */ \n"  % module_name
-        print >>self.output, self.spacing() + UU+"$pyjs.modules_hash['"+module_name+"'] = $pyjs.modules."+module_name+";"
+        print >> self.output, self.spacing() + "return this;"
+        print >> self.output, self.spacing() + "}; /* end %s */"  % module_name
+        print >>self.output, self.spacing() + "$pyjs.modules_hash['"+module_name+"'] = $pyjs.loaded_modules['"+module_name+"'];"
+        print >> self.output, "\n"
+        print >>self.output, self.spacing(), "/* end module: %s */" % module_name
+        print >> self.output, "\n"
 
         # print out the deps
         if self.imported_modules:
@@ -841,13 +842,13 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
                 self.add_imported_module(importName)
                 if importAs:
                     assignName = importAs
-                    lhs = UU+"%s.%s" % (self.raw_module_name,
+                    lhs = "%s.%s" % (self.raw_module_name,
                                         assignName)
-                    stmt = "%s = pyjslib.__import__('%s', %s)" % (lhs,
+                    stmt = "%s = pyjslib.__import__('%s', '%s')" % (lhs,
                                                                   importName,
                                                                   self.raw_module_name)
                 else:
-                    stmt = "pyjslib.__import__('%s', %s)" % (importName,
+                    stmt = "pyjslib.__import__('%s', '%s')" % (importName,
                                                              self.raw_module_name)
                 print >> self.output, self.spacing(), stmt
 
@@ -861,7 +862,7 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
         if local:
             function_name = node.name
         else:
-            function_name = UU + self.modpfx() + node.name
+            function_name = self.modpfx() + node.name
         function_name = self.add_lookup('function', node.name, function_name)
         self.push_lookup()
 
@@ -1249,7 +1250,7 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
             base_classes = []
         local_prefix = 'cls_definition'
         self.local_prefix = None
-        class_name = self.add_lookup('class', node.name, UU+class_name)
+        class_name = self.add_lookup('class', node.name, class_name)
         print >>self.output, self.indent() + class_name + """ = (function(){
 %(s)svar cls_instance = pyjs__class_instance('%(n)s');
 %(s)svar %(p)s = new Object();
@@ -1527,10 +1528,10 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
                 lhs = jsname
             elif top_level:
                 if current_klass:
-                    #lhs = "var " + v.name + " = " + UU+current_klass.name_ + "." + v.name
-                    lhs = UU+current_klass.name_ + "." + v.name
+                    #lhs = "var " + v.name + " = " + current_klass.name_ + "." + v.name
+                    lhs = current_klass.name_ + "." + v.name
                 else:
-                    vname = UU + self.modpfx() + v.name
+                    vname = self.modpfx() + v.name
                     vname = self.add_lookup('variable', v.name, vname)
                     #lhs = "var " + v.name + " = " + vname
                     lhs = vname
@@ -1663,12 +1664,12 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
             # the python interpreter
             return
         self.add_imported_module(node.modname)
-        stmt = "pyjslib.__import__('%s', %s)" % (node.modname,
+        stmt = "pyjslib.__import__('%s', '%s')" % (node.modname,
                                                  self.raw_module_name)
         print >> self.output, self.spacing(), stmt
         for name in node.names:
             ass_name = name[1] or name[0]
-            lhs = UU+"%s.%s" % (self.raw_module_name, ass_name)
+            lhs = "%s.%s" % (self.raw_module_name, ass_name)
             rhs = '.'.join((node.modname, name[0]))
             print >> self.output, self.spacing(), "%s = %s;" % (lhs, rhs)
 
@@ -1687,7 +1688,7 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
 #                 self.add_imported_module(module_name)
 
 #             if len(self.lookup_stack) == 1:
-#                 lhs = UU+"%s.%s" % (self.raw_module_name, assignName)
+#                 lhs = "%s.%s" % (self.raw_module_name, assignName)
 #                 vdec = ''
 #             else:
 #                 lhs = assignName
@@ -1957,7 +1958,7 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
                 # Not defined yet. Assume module global
                 name_type = 'variable'
                 pyname = name
-                jsname = UU + self.modpfx() + name
+                jsname = self.modpfx() + name
             self.add_lookup(name_type, pyname, jsname)
 
     def expr(self, node, current_klass):
@@ -2074,7 +2075,8 @@ def translate(sources, output_file, module_name=None,
         current_tree = compiler.parseFile(src)
         if tree:
             merge(tree, current_tree)
-        tree = current_tree
+        else:
+            tree = current_tree
     f = file(sources[0], "r")
     src = f.read()
     f.close()
@@ -2398,7 +2400,7 @@ class AppTranslator:
                 library, False, debug=debug, imported_js=imported_js)
 
             print >> lib_code, "/* initialize static library */"
-            print >> lib_code, "%s%s();\n" % (UU, library)
+            print >> lib_code, "%s();\n" % library
 
             print >> lib_code, '\n//\n// END LIB '+library+'\n//\n'
         if module_name:

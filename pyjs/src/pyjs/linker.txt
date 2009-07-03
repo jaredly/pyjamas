@@ -38,7 +38,7 @@ Let us generate some python code.
     >>> print file(out_file).read()
     <html>...
     var pyjslib = ...
-    var mypackage = $pyjs.modules.mypackage = function (__mod_name__)...
+    var mypackage = $pyjs.loaded_modules["mypackage"] = function (__mod_name__)...
 
 
     >>> print sorted(os.listdir(output))
@@ -91,7 +91,6 @@ So let us add an import.
     ...     print 1
     ... if __name__=='__main__':
     ...     main()
-    ... 
     ... """)
     >>> f.close()
 
@@ -118,6 +117,8 @@ Now we will add a sub module and import it.
     ... import util
     ... def main():
     ...     print 1
+    ... if __name__=='__main__':
+    ...     main()
     ... """)
     >>> f.close()
 
@@ -137,4 +138,7 @@ Now we will add a sub module and import it.
 
 clean up!
 
-    >>> shutil.rmtree(tmp)
+#    >>> shutil.rmtree(tmp)
+
+    >>> print tmp
+    >>> print tmp + '/output/mypackage.index.html'

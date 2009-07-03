@@ -373,26 +373,3 @@ function pyjs_type(clsname, bases, methods)
     return pyjs__class_function(cls_instance, obj, bases);
 }
 
-String.prototype.__getitem__ = String.prototype.charAt;
-String.prototype.upper = String.prototype.toUpperCase;
-String.prototype.lower = String.prototype.toLowerCase;
-String.prototype.find=pyjslib.String_find;
-String.prototype.join=pyjslib.String_join;
-String.prototype.isdigit=pyjslib.String_isdigit;
-String.prototype.__iter__=pyjslib.String___iter__;
-
-String.prototype.__replace=String.prototype.replace;
-String.prototype.replace=pyjslib.String_replace;
-
-String.prototype.split=pyjslib.String_split;
-String.prototype.strip=pyjslib.String_strip;
-String.prototype.lstrip=pyjslib.String_lstrip;
-String.prototype.rstrip=pyjslib.String_rstrip;
-String.prototype.startswith=pyjslib.String_startswith;
-String.prototype.endswith=pyjslib.String_endswith;
-String.prototype.ljust=pyjslib.String_ljust;
-String.prototype.rjust=pyjslib.String_rjust;
-String.prototype.center=pyjslib.String_center;
-
-var str = String;
-

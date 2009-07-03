@@ -16,6 +16,8 @@
 
 # must declare import _before_ importing sys
 
+class object:
+    pass
 
 # FIXME: dynamic=1, async=False, init=True are useless here (?)
 def import_module(path, parent_module, module_name, dynamic=1, async=False, init=True):
@@ -44,15 +46,21 @@ def import_module(path, parent_module, module_name, dynamic=1, async=False, init
         importName += '.'
     return None
 
-def __import__(path, context):
-    JS("""
-    // TODO: relative imports
-    var module = $pyjs.loaded_modules[path];
-    if (module === undefined){
-        alert('TODO: dynamic import');
-    };
-    return module();
-    """)
+def __import__(path, context, module_name=None):
+    available = list(JS("$pyjs.available_modules"))
+    if not path in available:
+        p = '.'.join(context.split('.')[:-1])
+        path = p + '.' + path
+    names = path.split(".")
+    importName = ''
+    # Import all modules in the chain (import a.b.c)
+    module = None
+    for name in names[:-1]:
+        importName += name
+        JS("module = $pyjs.loaded_modules[importName]; module(null);")
+        importName += '.'
+    JS("module = $pyjs.loaded_modules[path]; module(module_name);")
+    return module
 
 
 # FIXME: dynamic=1, async=False are useless here (?). Only dynamic modules 
@@ -494,6 +502,28 @@ pyjslib.String_center = function(width, fillchar) {
 
 pyjslib.abs = Math.abs;
 
+String.prototype.__getitem__ = String.prototype.charAt;
+String.prototype.upper = String.prototype.toUpperCase;
+String.prototype.lower = String.prototype.toLowerCase;
+String.prototype.find=pyjslib.String_find;
+String.prototype.join=pyjslib.String_join;
+String.prototype.isdigit=pyjslib.String_isdigit;
+String.prototype.__iter__=pyjslib.String___iter__;
+
+String.prototype.__replace=String.prototype.replace;
+String.prototype.replace=pyjslib.String_replace;
+
+String.prototype.split=pyjslib.String_split;
+String.prototype.strip=pyjslib.String_strip;
+String.prototype.lstrip=pyjslib.String_lstrip;
+String.prototype.rstrip=pyjslib.String_rstrip;
+String.prototype.startswith=pyjslib.String_startswith;
+String.prototype.endswith=pyjslib.String_endswith;
+String.prototype.ljust=pyjslib.String_ljust;
+String.prototype.rjust=pyjslib.String_rjust;
+String.prototype.center=pyjslib.String_center;
+
+var str = String;
 """)
 
 class Class:
@@ -750,6 +780,8 @@ class List:
         return s;
         """)
 
+list = List
+
 class Tuple:
     @noSourceTracking
     def __init__(self, data=None):
@@ -939,6 +971,8 @@ class Tuple:
         return s;
         """)
 
+tuple = Tuple
+
 class Dict:
     @noSourceTracking
     def __init__(self, data=None):
@@ -1127,6 +1161,8 @@ class Dict:
         s += "}";
         return s;
         """)
+
+dict = Dict
 
 # IE6 doesn't like pyjslib.super
 @noSourceTracking
@@ -1899,4 +1935,6 @@ def any(iterable):
         if element:
             return True
     return False
+
+init()
 
