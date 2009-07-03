@@ -22,7 +22,7 @@ import os
 import copy
 from cStringIO import StringIO
 import re
-import md5
+import hashlib
 
 # the standard location for builtins (e.g. pyjslib) can be
 # over-ridden by changing this.  it defaults to sys.prefix
@@ -534,7 +534,7 @@ class Translator:
 
 
     def md5(self, node):
-        return md5.new(self.raw_module_name + str(node.lineno) + repr(node)).hexdigest()
+        return hashlib.md5(self.raw_module_name + str(node.lineno) + repr(node)).hexdigest()
 
     def track_lineno(self, node, module=False):
         if self.source_tracking and node.lineno:

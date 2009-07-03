@@ -3,6 +3,10 @@ from pyjs import linker
 from pyjs import translator
 from pyjs import util
 from cStringIO import StringIO
+from optparse import OptionParser
+import pyjs
+
+AVAILABLE_PLATFORMS = ('IE6', 'Opera', 'OldMoz', 'Safari', 'Mozilla')
 
 BOILERPLATE_PATH = os.path.join(os.path.dirname(__file__), 'boilerplate')
 
@@ -38,7 +42,7 @@ class BrowserLinker(linker.BaseLinker):
         dir_name = os.path.dirname(module_path)
         if not dir_name in self.merged_public:
             public_folder = os.path.join(dir_name, 'public')
-            if os.path.isdir(public_folder):
+            if os.path.exists(public_folder) and os.path.isdir(public_folder):
                 util.copytree_exists(public_folder,
                                      self.output)
                 self.merged_public.add(dir_name)
@@ -46,9 +50,9 @@ class BrowserLinker(linker.BaseLinker):
             out_file = '%s.__%s__.js' % (module_path[:-3], platform)
         else:
             out_file = '%s.js' % module_path[:-3]
+        if out_file in self.done.get(platform, []):
+            return
         if platform is None:
-            if out_file in self.done.get(platform, []):
-                return
             deps = translator.translate([module_path] +  overrides,
                                         out_file,
                                         module_name=module_name)
@@ -63,7 +67,8 @@ class BrowserLinker(linker.BaseLinker):
             self.done[platform].append(out_file)
         if module_name not in self.visited_modules.setdefault(platform, []):
             self.visited_modules[platform].append(module_name)
-        self.visit_modules(deps, platform)
+        if deps:
+            self.visit_modules(deps, platform)
 
     def visit_end_platform(self, platform):
         if not platform:
@@ -178,3 +183,46 @@ class BrowserLinker(linker.BaseLinker):
         fh.write  (base_html)
         fh.close  ()
         return 1
+
+def build_script():
+    usage = """
+    usage: %prog [options] <application module name>
+
+    This is the command line builder for the pyjamas project, which can
+    be used to build Ajax applications from Python.
+    For more information, see the website at http://pyjs.org/
+    """
+    global app_platforms
+    parser = OptionParser(usage = usage)
+    # TODO: compile options
+    #pyjs.add_compile_options(parser)
+    parser.add_option("-o", "--output", dest="output",
+        help="directory to which the webapp should be written")
+    parser.add_option("-j", "--include-js", dest="js_includes", action="append",
+        help="javascripts to load into the same frame as the rest of the script")
+    parser.add_option("-I", "--library_dir", dest="library_dirs",
+        action="append", help="additional paths appended to PYJSPATH")
+    parser.add_option("-P", "--platforms", dest="platforms",
+        help="platforms to build for, comma-separated")
+
+    parser.set_defaults(output="output",
+                        js_includes=[],
+                        library_dirs=[],
+                        platforms=(','.join(AVAILABLE_PLATFORMS))
+                        )
+    options, args = parser.parse_args()
+    if len(args) != 1:
+        parser.error("incorrect number of arguments")
+
+    top_module = args[0]
+    for d in options.library_dirs:
+        pyjs.path.append(os.path.abspath(d))
+
+    if options.platforms:
+       app_platforms = options.platforms.split(',')
+    print pyjs.path
+    l = BrowserLinker(top_module,
+                      output=options.output,
+                      platforms=app_platforms,
+                      path=pyjs.path)
+    l()
