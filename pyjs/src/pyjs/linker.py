@@ -38,13 +38,15 @@ def module_path(name, path):
 class BaseLinker(object):
 
     def __init__(self, top_module, output='output',
-                 debug=False, js_libs=[], platforms=[], path=[]):
+                 debug=False, js_libs=[], platforms=[], path=[],
+                 translator_arguments={}):
         self.js_path = os.path.abspath(output)
         self.path = path + [LIB_PATH]
         self.platforms = platforms
         self.top_module = top_module
         self.output = os.path.abspath(output)
         self.js_libs = js_libs
+        self.translator_arguments = translator_arguments
 
     def __call__(self):
         self.done = {}

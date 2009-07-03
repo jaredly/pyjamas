@@ -55,7 +55,8 @@ class BrowserLinker(linker.BaseLinker):
         if platform is None:
             deps = translator.translate([module_path] +  overrides,
                                         out_file,
-                                        module_name=module_name)
+                                        module_name=module_name,
+                                        **self.translator_arguments)
             self.dependencies[out_file] = deps
             if '.' in module_name:
                 for i, dep in enumerate(deps):
@@ -219,10 +220,19 @@ def build_script():
         pyjs.path.append(os.path.abspath(d))
 
     if options.platforms:
-       app_platforms = options.platforms.split(',')
+       app_platforms = options.platforms.lower().split(',')
     print pyjs.path
+
+    translator_arguments=dict(debug=False,
+                              print_statements = True,
+                              function_argument_checking=True,
+                              attribute_checking=True,
+                              source_tracking=False,
+                              line_tracking=False,
+                              store_source=False)
     l = BrowserLinker(top_module,
                       output=options.output,
                       platforms=app_platforms,
-                      path=pyjs.path)
+                      path=pyjs.path,
+                      translator_arguments=translator_arguments)
     l()
