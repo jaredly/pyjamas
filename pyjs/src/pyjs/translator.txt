@@ -112,10 +112,17 @@ modules are there.
     >>> baseclass = os.path.join(tmp, 'baseclass.py')
     >>> f = file(baseclass, 'w')
     >>> f.write("""
-    ... from a import b
-    ... from a import c as cc
-    ... print b
-    ... print cc
+    ... import pack1
+    ... import pack1.mod
+    ... import pack1.mod as jod
+    ... from pack2.x import y
+    ... from pack2.x import something as z
+    ... print pack1
+    ... print y
+    ... def main():
+    ...     import pack3
+    ...     from pack3 import z as y
+    ...     print pack3
     ... """)
     >>> f.close()
 
@@ -127,5 +134,28 @@ modules are there.
     ...                      source_tracking=False,
     ...                      line_tracking=False,
     ...                      store_source=False)
-    >>> print file(out_file).read()
 
+Note that the __import__ function is called twice in edge-cases like
+the on in this example, it does not matter because duplicate imports
+do nothing. TODO: fix this
+
+    >>> for line in file(out_file):
+    ...     print line.strip()
+    /* start module: baseclass */
+    ...
+    baseclass.pack1 = pyjslib.__import__('pack1', 'baseclass')
+    baseclass.pack1 = pyjslib.__import__('pack1.mod', 'baseclass')
+    baseclass.jod = pyjslib.__import__('pack1.mod', 'baseclass')
+    pyjslib.__import__('pack2.x', 'baseclass')
+    baseclass.y = = pack2.x.y;
+    pyjslib.__import__('pack2.x', 'baseclass')
+    baseclass.z = = pack2.x.something;
+    pyjslib.printFunc([baseclass.pack1], 1);
+    pyjslib.printFunc([baseclass.y], 1);
+    ...
+    var pack3 = pyjslib.__import__('pack3', 'baseclass')
+    pyjslib.__import__('pack3', 'baseclass')
+    var y = = pack3.z;
+    pyjslib.printFunc([pack3], 1);
+    ...
+    */

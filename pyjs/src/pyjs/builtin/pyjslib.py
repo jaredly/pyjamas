@@ -1586,6 +1586,8 @@ def isFunction(a):
     return typeof a == 'function';
     """)
 
+callable = isFunction
+
 @noSourceTracking
 def isString(a):
     JS("""

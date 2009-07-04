@@ -68,3 +68,4 @@ def trackstackstr(stack=None):
             stackstrings.append('%s.py, line %d' % (s.module, s.lineno))
     return '\n'.join(stackstrings)
 
+platform = JS('$pyjs.platform')

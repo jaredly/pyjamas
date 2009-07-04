@@ -1,5 +1,6 @@
 from write import write, writebr
 import sys
+from __pyjamas__ import JS
 
 class UnitTest:
     def __init__(self):
@@ -17,8 +18,10 @@ class UnitTest:
         self.assertTrue = self.failUnless
 
     def run(self):
+        print "Unittest.run", self.getName()
         self.getTestMethods()
         for test_method_name in self.test_methods:
+            print "Unittest.run", test_method_name
             test_method=getattr(self, test_method_name)
             self.current_test_name = test_method_name
             self.setUp()
@@ -123,6 +126,7 @@ class UnitTest:
             fg_colour="#000000"
 
         tests_passed=self.tests_completed - self.tests_failed
+        print "in displayStats", sys.platform
 
 
         if sys.platform in ['mozilla', 'ie6', 'opera', 'oldmoz', 'safari']:

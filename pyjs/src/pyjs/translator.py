@@ -331,9 +331,9 @@ class Translator:
                 elif isinstance(child, ast.Class):
                     self._class(child)
                 elif isinstance(child, ast.Import):
-                    self._import(child)
+                    self._import(child, False)
                 elif isinstance(child, ast.From):
-                    self._from(child)
+                    self._from(child, False)
                 elif isinstance(child, ast.Discard):
                     self._discard(child, None)
                 elif isinstance(child, ast.Assign):
@@ -510,12 +510,12 @@ class Translator:
             depth -= 1
         return (name_type, pyname, jsname, depth, max_depth == depth and not name_type is None)
 
-    def gen_mod_import(self, parentName, importName, dynamic=1):
-        #pyjs_ajax_eval("%(n)s.cache.js", null, true);
-        return """\
-%(s)spyjslib.import_module(sys.loadpath, '%(p)s', '%(n)s', %(d)d, false, true);
-%(s)s$pyjs.track.module='%(p)s';
-""" % ({'s': self.spacing(), 'p': parentName, 'd': dynamic, 'n': importName})
+#     def gen_mod_import(self, parentName, importName, dynamic=1):
+#         #pyjs_ajax_eval("%(n)s.cache.js", null, true);
+#         return """\
+# %(s)spyjslib.import_module(sys.loadpath, '%(p)s', '%(n)s', %(d)d, false, true);
+# %(s)s$pyjs.track.module='%(p)s';
+# """ % ({'s': self.spacing(), 'p': parentName, 'd': dynamic, 'n': importName})
 
     def add_imported_module(self, importName):
         names = importName.split(".")
@@ -834,24 +834,48 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
         else:
             print >>self.output, self.dedent() + "});"
 
-    def _import(self, node):
+    def _import(self, node, local=False):
         for importName, importAs in node.names:
-            if importName == '__pyjamas__': # special module to help make pyjamas modules loadable in the python interpreter
-                pass
-            else:
+            # special module to help make pyjamas modules loadable in
+            # the python interpreter
+            if importName != '__pyjamas__':
+                # add to dependencies
                 self.add_imported_module(importName)
-                if importAs:
-                    assignName = importAs
-                    lhs = "%s.%s" % (self.raw_module_name,
-                                        assignName)
-                    self.add_lookup("variable", assignName, lhs)
-                    stmt = "%s = pyjslib.__import__('%s', '%s')" % (lhs,
-                                                                  importName,
-                                                                  self.raw_module_name)
+                ass_name = importAs or importName.split('.')[0]
+                if local:
+                    lhs = 'var %s =' % ass_name
+                    self.add_lookup("variable", ass_name, ass_name)
                 else:
-                    stmt = "pyjslib.__import__('%s', '%s')" % (importName,
-                                                             self.raw_module_name)
+                    fqn = '.'.join((self.raw_module_name, ass_name))
+                    lhs = '%s =' %  fqn
+                    self.add_lookup("variable", ass_name, fqn)
+                stmt = "%s pyjslib.__import__('%s', '%s')" % (
+                    lhs, importName, self.raw_module_name)
                 print >> self.output, self.spacing(), stmt
+
+
+    def _from(self, node, local=False):
+        if node.modname == '__pyjamas__':
+            # special module to help make pyjamas modules loadable in
+            # the python interpreter
+            return
+        self.add_imported_module(node.modname)
+        stmt = "pyjslib.__import__('%s', '%s')" % (node.modname,
+                                                   self.raw_module_name)
+        print >> self.output, self.spacing(), stmt
+        for name in node.names:
+            ass_name = name[1] or name[0]
+            if local:
+                lhs = 'var %s =' % ass_name
+                self.add_lookup("variable", ass_name, ass_name)
+            else:
+                fqn = "%s.%s" % (self.raw_module_name, ass_name)
+                lhs = '%s =' %  fqn
+                self.add_lookup("variable", ass_name, fqn)
+            rhs = '.'.join((node.modname, name[0]))
+            print >> self.output, self.spacing(), "%s %s;" % (lhs, rhs)
+
+
 
     def _function(self, node, local=False):
         self.push_options()
@@ -1449,9 +1473,9 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
         elif isinstance(node, ast.Raise):
             self._raise(node, current_klass)
         elif isinstance(node, ast.Import):
-            self._import(node)
+            self._import(node, True)
         elif isinstance(node, ast.From):
-            self._from(node)
+            self._from(node, True)
         else:
             raise TranslationError("unsupported type (in _stmt)", node)
 
@@ -1655,45 +1679,6 @@ var %(e)s_name = (typeof %(e)s.__name__ == 'undefined' ? %(e)s.name : %(e)s.__na
 
         print >>self.output, self.dedent() + "}"
 
-
-    def _from(self, node):
-        if node.modname == '__pyjamas__':
-            # special module to help make pyjamas modules loadable in 
-            # the python interpreter
-            return
-        self.add_imported_module(node.modname)
-        stmt = "pyjslib.__import__('%s', '%s')" % (node.modname,
-                                                 self.raw_module_name)
-        print >> self.output, self.spacing(), stmt
-        for name in node.names:
-            ass_name = name[1] or name[0]
-            lhs = "%s.%s" % (self.raw_module_name, ass_name)
-            self.add_lookup("variable", ass_name, lhs)
-            rhs = '.'.join((node.modname, name[0]))
-            print >> self.output, self.spacing(), "%s = %s;" % (lhs, rhs)
-
-#             # look up "hack" in AppTranslator as to how findFile gets here
-#             module_name = node.modname + "." + name[0]
-#             if name[1]:
-#                 assignName = name[1]
-#             else:
-#                 assignName = name[0]
-#             rhs = "$pyjs.modules." + module_name
-#             try:
-#                 ff = self.findFile(module_name + ".py")
-#             except Exception:
-#                 ff = None
-#             if ff:
-#                 self.add_imported_module(module_name)
-
-#             if len(self.lookup_stack) == 1:
-#                 lhs = "%s.%s" % (self.raw_module_name, assignName)
-#                 vdec = ''
-#             else:
-#                 lhs = assignName
-#                 vdec = 'var '
-#             lhs = self.add_lookup('import', assignName, lhs)
-#             print >> self.output, self.spacing() + "%s%s = %s;" % (vdec, lhs, rhs)
 
     def _compare(self, node, current_klass):
         lhs = self.expr(node.expr, current_klass)
