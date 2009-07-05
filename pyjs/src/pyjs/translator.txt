@@ -112,6 +112,8 @@ modules are there.
     >>> baseclass = os.path.join(tmp, 'baseclass.py')
     >>> f = file(baseclass, 'w')
     >>> f.write("""
+    ... if 1:
+    ...     import pack4
     ... import pack1
     ... import pack1.mod
     ... import pack1.mod as jod
@@ -121,6 +123,8 @@ modules are there.
     ... print y
     ... def main():
     ...     import pack3
+    ...     import pack3.sub
+    ...     import pack3.sub as pub
     ...     from pack3 import z as y
     ...     print pack3
     ... """)
@@ -143,19 +147,28 @@ do nothing. TODO: fix this
     ...     print line.strip()
     /* start module: baseclass */
     ...
+    try {
+    if (pyjslib.bool(1)) {
+    baseclass.pack4 = pyjslib.__import__('pack4', 'baseclass')
+    }
     baseclass.pack1 = pyjslib.__import__('pack1', 'baseclass')
-    baseclass.pack1 = pyjslib.__import__('pack1.mod', 'baseclass')
+    baseclass.pack1 = pyjslib.__import__('pack1', 'baseclass')
     baseclass.jod = pyjslib.__import__('pack1.mod', 'baseclass')
     pyjslib.__import__('pack2.x', 'baseclass')
-    baseclass.y = = pack2.x.y;
+    baseclass.y = pack2.x.y;
     pyjslib.__import__('pack2.x', 'baseclass')
-    baseclass.z = = pack2.x.something;
+    baseclass.z = pack2.x.something;
     pyjslib.printFunc([baseclass.pack1], 1);
     pyjslib.printFunc([baseclass.y], 1);
-    ...
+    baseclass.main = function() {
+    if ($pyjs.options.arg_count && arguments.length != 0) pyjs__exception_func_param(arguments.callee.__name__, 0, 0, arguments.length);
     var pack3 = pyjslib.__import__('pack3', 'baseclass')
+    var pack3 = pyjslib.__import__('pack3', 'baseclass')
+    var pub = pyjslib.__import__('pack3.sub', 'baseclass')
     pyjslib.__import__('pack3', 'baseclass')
-    var y = = pack3.z;
+    var y = pack3.z;
     pyjslib.printFunc([pack3], 1);
+    return null;
+    };
     ...
     */

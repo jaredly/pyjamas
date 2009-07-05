@@ -835,13 +835,23 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
             print >>self.output, self.dedent() + "});"
 
     def _import(self, node, local=False):
+        # XXX: hack for in-function checking, we should have another
+        # object to check our scope
+        local = local and self.option_stack
         for importName, importAs in node.names:
             # special module to help make pyjamas modules loadable in
             # the python interpreter
             if importName != '__pyjamas__':
                 # add to dependencies
                 self.add_imported_module(importName)
-                ass_name = importAs or importName.split('.')[0]
+                package_name = importName.split('.')[0]
+                if importAs:
+                    rhs = importName
+                    ass_name = importAs
+                else:
+                    ass_name = package_name
+                    rhs = package_name
+
                 if local:
                     lhs = 'var %s =' % ass_name
                     self.add_lookup("variable", ass_name, ass_name)
@@ -850,11 +860,14 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
                     lhs = '%s =' %  fqn
                     self.add_lookup("variable", ass_name, fqn)
                 stmt = "%s pyjslib.__import__('%s', '%s')" % (
-                    lhs, importName, self.raw_module_name)
+                    lhs, rhs, self.raw_module_name)
                 print >> self.output, self.spacing(), stmt
 
 
     def _from(self, node, local=False):
+        # XXX: hack for in-function checking, we should have another
+        # object to check our scope
+        local = local and self.option_stack
         if node.modname == '__pyjamas__':
             # special module to help make pyjamas modules loadable in
             # the python interpreter
@@ -874,8 +887,6 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
                 self.add_lookup("variable", ass_name, fqn)
             rhs = '.'.join((node.modname, name[0]))
             print >> self.output, self.spacing(), "%s %s;" % (lhs, rhs)
-
-
 
     def _function(self, node, local=False):
         self.push_options()
