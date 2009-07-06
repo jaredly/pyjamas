@@ -851,7 +851,12 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
                 else:
                     ass_name = package_name
                     rhs = package_name
-
+                    # make sure the module below the package gets
+                    # imported too
+                    if package_name!=importName:
+                        stmt = "pyjslib.__import__('%s', '%s')" % (
+                            importName, self.raw_module_name)
+                        print >> self.output, self.spacing(), stmt
                 if local:
                     lhs = 'var %s =' % ass_name
                     self.add_lookup("variable", ass_name, ass_name)

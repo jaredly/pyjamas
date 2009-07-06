@@ -152,6 +152,7 @@ do nothing. TODO: fix this
     baseclass.pack4 = pyjslib.__import__('pack4', 'baseclass')
     }
     baseclass.pack1 = pyjslib.__import__('pack1', 'baseclass')
+    pyjslib.__import__('pack1.mod', 'baseclass')
     baseclass.pack1 = pyjslib.__import__('pack1', 'baseclass')
     baseclass.jod = pyjslib.__import__('pack1.mod', 'baseclass')
     pyjslib.__import__('pack2.x', 'baseclass')
@@ -163,6 +164,7 @@ do nothing. TODO: fix this
     baseclass.main = function() {
     if ($pyjs.options.arg_count && arguments.length != 0) pyjs__exception_func_param(arguments.callee.__name__, 0, 0, arguments.length);
     var pack3 = pyjslib.__import__('pack3', 'baseclass')
+    pyjslib.__import__('pack3.sub', 'baseclass')
     var pack3 = pyjslib.__import__('pack3', 'baseclass')
     var pub = pyjslib.__import__('pack3.sub', 'baseclass')
     pyjslib.__import__('pack3', 'baseclass')
