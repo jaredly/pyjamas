@@ -1558,6 +1558,7 @@ def max(*sequence):
             maxValue = item
     return maxValue
 
+next_hash_id = 0
 
 @noSourceTracking
 def hash(obj):
