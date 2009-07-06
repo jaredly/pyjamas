@@ -330,7 +330,8 @@ class ClassTest(UnitTest):
         self.assertEqual(EXEC_ORDER[2], 'circ2-2')
         self.assertEqual(imports.exec_order[3], 'circ1-2')
 
-        # import imports.child # FIXME: if the import statement is here in stead of at the top, this fails on compiling
+        # import imports.child
+        # FIXME: if the import statement is here in stead of at the top, this fails on compiling
         teststring = 'import test'
         try:
             c = imports.child.Child()
