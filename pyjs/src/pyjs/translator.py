@@ -2067,7 +2067,7 @@ def translate(sources, output_file, module_name=None,
     sources = map(os.path.abspath, sources)
     output_file = os.path.abspath(output_file)
     if not module_name:
-        module_name = os.path.basename(sources[0])[:-3]
+        module_name, extension = os.path.splitext(os.path.basename(sources[0]))
 
     trees = []
     tree= None
@@ -2344,7 +2344,6 @@ class AppTranslator:
 
     def _translate(self, module_name, debug=False):
         self.library_modules.append(module_name)
-        
         file_name = self.findFile(module_name + self.extension)
 
         output = StringIO()
@@ -2422,109 +2421,67 @@ def add_compile_options(parser):
     speed_options = {}
 
     parser.add_option("-d", "--debug",
-        dest="debug",
-        action="store_true",
-        help="Wrap function calls with javascript debug code",
-    )
-    parser.add_option("--no-debug",
-        dest="debug",
-        action="store_false",
-    )
+                      dest="debug", default=False,
+                      action="store_true",
+                      help="Enable debugging in output."
+                      )
+
     speed_options['debug'] = False
 
-    parser.add_option("--no-print-statements",
-        dest="print_statments",
-        action="store_false",
-        help="Remove all print statements",
-    )
     parser.add_option("--print-statements",
-        dest="print_statements",
-        action="store_true",
-        help="Generate code for print statements",
-    )
+                      dest="print_statements",
+                      action="store_true",
+                      default=False,
+                      help="Generate code for print statements"
+                      )
     speed_options['print_statements'] = False
 
-    parser.add_option("--no-function-argument-checking",
-        dest = "function_argument_checking",
-        action="store_false",
-        help = "Do not generate code for function argument checking",
-    )
     parser.add_option("--function-argument-checking",
-        dest = "function_argument_checking",
-        action="store_true",
-        help = "Generate code for function argument checking",
-    )
+                      dest = "function_argument_checking",
+                      action="store_true",
+                      default=False,
+                      help = "Generate code for function argument checking"
+                      )
     speed_options['function_argument_checking'] = False
 
-    parser.add_option("--no-attribute-checking",
-        dest = "attribute_checking",
-        action="store_false",
-        help = "Do not generate code for attribute checking",
-    )
     parser.add_option("--attribute-checking",
-        dest = "attribute_checking",
-        action="store_true",
-        help = "Generate code for attribute checking",
-    )
+                      dest = "attribute_checking",
+                      default=False,
+                      action="store_true",
+                      help = "Generate code for attribute checking"
+                      )
     speed_options['attribute_checking'] = False
 
-    parser.add_option("--no-source-tracking",
-        dest = "source_tracking",
-        action="store_false",
-        help = "Do not generate code for source tracking",
-    )
     parser.add_option("--source-tracking",
-        dest = "source_tracking",
-        action="store_true",
-        help = "Generate code for source tracking",
-    )
+                      dest = "source_tracking",
+                      action="store_true",
+                      default=False,
+                      help = "Generate code for source tracking"
+                      )
+
     speed_options['source_tracking'] = False
 
-    parser.add_option("--no-line-tracking",
-        dest = "line_tracking",
-        action="store_true",
-        help = "Do not generate code for source tracking on every line",
-    )
     parser.add_option("--line-tracking",
-        dest = "line_tracking",
-        action="store_true",
-        help = "Generate code for source tracking on every line",
-    )
+                      dest = "line_tracking",
+                      action="store_true",
+                      default=False,
+                      help = "Generate code for source tracking on every line"
+                      )
 
-    parser.add_option("--no-store-source",
-        dest = "store_source",
-        action="store_false",
-        help = "Do not store python code line in javascript",
-    )
     parser.add_option("--store-source",
-        dest = "store_source",
-        action="store_true",
-        help = "Store python code line in javascript",
-    )
-
+                      dest = "store_source",
+                      action="store_true",
+                      default=False,
+                      help = "Store python code line in javascript"
+                      )
 
     def set_multiple(option, opt_str, value, parser, **kwargs):
         for k in kwargs.keys():
             setattr(parser.values, k, kwargs[k])
 
-    parser.add_option("-O",
-        action="callback",
-        callback = set_multiple,
-        callback_kwargs = speed_options,
-        help="Set all options that maximize speed",
-    )
-    parser.set_defaults(\
-                        debug=False,
-                        print_statements=True,
-                        function_argument_checking = True,
-                        attribute_checking = True,
-                        source_tracking = True,
-                        line_tracking = True,
-                        store_source = True,
-                        )
 
 usage = """
-  usage: %prog [options] file_name [module_name]
+  usage: %prog [options] file...
 """
 
 def main():
@@ -2532,28 +2489,34 @@ def main():
     from optparse import OptionParser
 
     parser = OptionParser(usage = usage)
+    parser.add_option("-o", "--output", dest="output",
+                      help="Place the output into <output>")
+    parser.add_option("-m", "--module-name", dest="module_name",
+                      help="Module name of output")
     add_compile_options(parser)
     (options, args) = parser.parse_args()
 
     if len(args)<1:
-        print >> sys.stderr, parser.get_usage()
-        sys.exit(1)
-    file_name = os.path.abspath(args[0])
-    if not os.path.isfile(file_name):
-        print >> sys.stderr, "File not found %s" % file_name
-        sys.exit(1)
-    if len(args) > 1:
-        module_name = args[1]
-    else:
-        module_name = '__main__'
-    print translate(file_name, module_name,
-          debug = options.debug,
-          print_statements = options.print_statements,
-          function_argument_checking = options.function_argument_checking,
-          attribute_checking = options.attribute_checking,
-          source_tracking = options.source_tracking,
-          line_tracking = options.line_tracking,
-          store_source = options.store_source,
+        parser.error("incorrect number of arguments")
+
+    if not options.output:
+        parser.error("No output file specified")
+    options.output = os.path.abspath(options.output)
+
+    file_names = map(os.path.abspath, args)
+    for fn in file_names:
+        if not os.path.isfile(fn):
+            print >> sys.stderr, "Input file not found %s" % fn
+            sys.exit(1)
+
+    translate(file_names, options.output, options.module_name,
+              debug = options.debug,
+              print_statements = options.print_statements,
+              function_argument_checking = options.function_argument_checking,
+              attribute_checking = options.attribute_checking,
+              source_tracking = options.source_tracking,
+              line_tracking = options.line_tracking,
+              store_source = options.store_source,
     ),
 
 if __name__ == "__main__":

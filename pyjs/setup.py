@@ -12,5 +12,6 @@ setup(
     extras_require = dict(test=['zope.testing']),
     entry_points = {'console_scripts':[
         'build=pyjs.browser:build_script',
+        'translate=pyjs.translator:main',
     ]},
     )

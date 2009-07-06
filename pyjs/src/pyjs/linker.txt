@@ -153,7 +153,7 @@ Use an import of an unknown module.
     ...                          path=[lib_path])
     >>> l()
     Traceback (most recent call last):
-    RuntimeError: Module not found 'unknown'
+    RuntimeError: Module 'unknown' found. Dep of {'...
 
 clean up!
 

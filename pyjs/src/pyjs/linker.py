@@ -77,7 +77,8 @@ class BaseLinker(object):
         for mn in all_names:
             p = module_path(mn, self.path)
             if not p:
-                raise RuntimeError, "Module not found %r" % mn
+                raise RuntimeError, "Module %r found. Dep of %r" % (
+                    mn, self.dependencies)
             if mn==self.top_module:
                 self.top_module_path = p
             override_path=None
@@ -88,6 +89,44 @@ class BaseLinker(object):
                 self.visit_module(p, [override_path], platform, module_name=mn)
             else:
                 self.visit_module(p, [], platform, module_name=mn)
+
+    def visit_module(self, file_path, overrides, platform,
+                     module_name):
+        # look if we have a public dir
+        dir_name = os.path.dirname(file_path)
+        self.merge_resources(dir_name)
+        if platform and overrides:
+            out_file = '%s.__%s__.js' % (file_path[:-3], platform)
+        else:
+            out_file = '%s.js' % file_path[:-3]
+        if out_file in self.done.get(platform, []):
+            return
+        # translate if no platform or if we have an override
+        if (   platform is None
+            or (platform and overrides)
+           ):
+            deps = translator.translate([file_path] +  overrides,
+                                        out_file,
+                                        module_name=module_name,
+                                        **self.translator_arguments)
+            self.dependencies[out_file] = deps
+            if '.' in module_name:
+                for i, dep in enumerate(deps):
+                    if module_path(dep, path=[dir_name]):
+                        deps[i] = '.'.join(module_name.split('.')[:-1] + [dep])
+        else:
+            deps = self.dependencies[out_file]
+        if out_file not in self.done.setdefault(platform, []):
+            self.done[platform].append(out_file)
+        if module_name not in self.visited_modules.setdefault(platform, []):
+            self.visited_modules[platform].append(module_name)
+        if deps:
+            self.visit_modules(deps, platform)
+
+    def merge_resources(self, dir_name):
+        """gets a directory path for each module visited, this can be
+        used to collect resources e.g. public folders"""
+        pass
 
     def visit_start(self):
         pass
