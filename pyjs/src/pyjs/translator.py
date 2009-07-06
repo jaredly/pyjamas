@@ -24,32 +24,6 @@ from cStringIO import StringIO
 import re
 import hashlib
 
-# the standard location for builtins (e.g. pyjslib) can be
-# over-ridden by changing this.  it defaults to sys.prefix
-# so that on a system-wide install of pyjamas the builtins
-# can be found in e.g. {sys.prefix}/share/pyjamas
-#
-# over-rides can be done by either explicitly modifying
-# pyjs.prefix or by setting an environment variable, PYJSPREFIX.
-
-prefix = sys.prefix
-
-if os.environ.has_key('PYJSPREFIX'):
-    prefix = os.environ['PYJSPREFIX']
-
-# pyjs.path is the list of paths, just like sys.path, from which
-# library modules will be searched for, for compile purposes.
-# obviously we don't want to use sys.path because that would result
-# in compiling standard python modules into javascript!
-
-path = [os.path.abspath('')]
-
-if os.environ.has_key('PYJSPATH'):
-    for p in os.environ['PYJSPATH'].split(os.pathsep):
-        p = os.path.abspath(p)
-        if os.path.isdir(p):
-            path.append(p)
-
 # this is the python function used to wrap native javascript
 NATIVE_JS_FUNC_NAME = "JS"
 NATIVE_DOC_FUNC_NAME = "doc"
@@ -510,13 +484,6 @@ class Translator:
             depth -= 1
         return (name_type, pyname, jsname, depth, max_depth == depth and not name_type is None)
 
-#     def gen_mod_import(self, parentName, importName, dynamic=1):
-#         #pyjs_ajax_eval("%(n)s.cache.js", null, true);
-#         return """\
-# %(s)spyjslib.import_module(sys.loadpath, '%(p)s', '%(n)s', %(d)d, false, true);
-# %(s)s$pyjs.track.module='%(p)s';
-# """ % ({'s': self.spacing(), 'p': parentName, 'd': dynamic, 'n': importName})
-
     def add_imported_module(self, importName):
         names = importName.split(".")
         if not importName in self.imported_modules:
@@ -528,10 +495,6 @@ class Translator:
             if not _importName in self.imported_modules:
                 self.imported_modules.append(_importName)
             _importName += '.'
-        #print >> self.output, self.gen_mod_import(self.raw_module_name,
-        #                                          strip_py(importName),
-        #                                          self.dynamic)
-
 
     def md5(self, node):
         return hashlib.md5(self.raw_module_name + str(node.lineno) + repr(node)).hexdigest()
@@ -2426,15 +2389,12 @@ def add_compile_options(parser):
                       help="Enable debugging in output."
                       )
 
-    speed_options['debug'] = False
-
     parser.add_option("--print-statements",
                       dest="print_statements",
                       action="store_true",
                       default=False,
                       help="Generate code for print statements"
                       )
-    speed_options['print_statements'] = False
 
     parser.add_option("--function-argument-checking",
                       dest = "function_argument_checking",
@@ -2442,7 +2402,6 @@ def add_compile_options(parser):
                       default=False,
                       help = "Generate code for function argument checking"
                       )
-    speed_options['function_argument_checking'] = False
 
     parser.add_option("--attribute-checking",
                       dest = "attribute_checking",
@@ -2450,7 +2409,6 @@ def add_compile_options(parser):
                       action="store_true",
                       help = "Generate code for attribute checking"
                       )
-    speed_options['attribute_checking'] = False
 
     parser.add_option("--source-tracking",
                       dest = "source_tracking",
@@ -2458,8 +2416,6 @@ def add_compile_options(parser):
                       default=False,
                       help = "Generate code for source tracking"
                       )
-
-    speed_options['source_tracking'] = False
 
     parser.add_option("--line-tracking",
                       dest = "line_tracking",
@@ -2474,10 +2430,6 @@ def add_compile_options(parser):
                       default=False,
                       help = "Store python code line in javascript"
                       )
-
-    def set_multiple(option, opt_str, value, parser, **kwargs):
-        for k in kwargs.keys():
-            setattr(parser.values, k, kwargs[k])
 
 
 usage = """
