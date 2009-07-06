@@ -1,6 +1,6 @@
-===========
-Linker test
-===========
+==============
+Browser-Linker
+==============
 
     >>> from pyjs import browser
     >>> from pyjs.testing import (

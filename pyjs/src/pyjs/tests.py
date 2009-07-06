@@ -6,8 +6,11 @@ def test_suite():
     translator = DocFileSuite('translator.txt',
                 optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
                         )
-    linker = DocFileSuite('linker.txt',
+    browser = DocFileSuite('browser.txt',
                 optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
                         )
-    s = unittest.TestSuite((translator, linker))
+    sm = DocFileSuite('sm.txt',
+                optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
+                      )
+    s = unittest.TestSuite((translator, browser, sm))
     return s

@@ -51,9 +51,14 @@ class SpidermonkeyLinker(linker.BaseLinker):
     """Spidermonkey linker, which links together files by using the
     load function of the spidermonkey shell."""
 
+    # we derive from mozilla
     platform_parents = {
         PLATFORM:['mozilla']
         }
+
+    def __init__(self, *args, **kwargs):
+        kwargs['platforms'] = [PLATFORM]
+        super(SpidermonkeyLinker, self).__init__(*args, **kwargs)
 
     def visit_start(self):
         self.js_libs.append('_pyjs.js')
@@ -88,7 +93,6 @@ def build_script():
     usage: %prog [options] module_name
     """
     parser = OptionParser(usage = usage)
-    # TODO: compile options
     translator.add_compile_options(parser)
     # override the default because we want print
     parser.set_defaults(print_statements=True)

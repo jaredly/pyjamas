@@ -174,3 +174,6 @@ do nothing. TODO: fix this
     };
     ...
     */
+
+    >>> import shutil
+    >>> shutil.rmtree(tmp)
