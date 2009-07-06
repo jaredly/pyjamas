@@ -82,8 +82,8 @@ class BaseLinker(object):
                 self.top_module_path = p
             override_path=None
             if platform:
-                override_path = module_path('__%s__.%s' % (
-                    platform, mn), self.path)
+                override_path = module_path('__%s__.%s' % (platform, mn),
+                                            self.path)
             if override_path:
                 self.visit_module(p, [override_path], platform, module_name=mn)
             else:

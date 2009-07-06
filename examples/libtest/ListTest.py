@@ -239,7 +239,7 @@ class ListTest(UnitTest):
             self.assertEqual(l.index(200000), 0)
             self.fail("ValueError not raised when expected")
         except ValueError, e:
-            self.assertTrue(str(e) == "list.index(x): x not in list",
+            self.assertTrue(str(e) == "list.index: 200000 not in list",
                             "ValueError exception returned incorrect message")
 
 class A:

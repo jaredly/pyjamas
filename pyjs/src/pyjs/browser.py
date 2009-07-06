@@ -53,7 +53,10 @@ class BrowserLinker(linker.BaseLinker):
             out_file = '%s.js' % module_path[:-3]
         if out_file in self.done.get(platform, []):
             return
-        if platform is None:
+        # translate if no platform or if we have an override
+        if (   platform is None
+            or (platform and overrides)
+           ):
             deps = translator.translate([module_path] +  overrides,
                                         out_file,
                                         module_name=module_name,

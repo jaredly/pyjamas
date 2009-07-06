@@ -649,8 +649,8 @@ class List:
                 return i;
                 }
             }
-        return -1;
         """)
+        raise ValueError("list.index: " + value + " not in list")
 
     @noSourceTracking
     def insert(self, index, value):
@@ -836,8 +836,8 @@ class Tuple:
                 return i;
                 }
             }
-        return -1;
         """)
+        raise ValueError("list.index: " + value + " not in list")
 
     @noSourceTracking
     def insert(self, index, value):

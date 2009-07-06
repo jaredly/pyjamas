@@ -101,7 +101,7 @@ Now we have the contents of the public folder in our output directory.
 
     >>> l()
     >>> print sorted(os.listdir(output))
-    [..., 'second.css']
+    [..., 'second.css'...]
 
 Now we will add a sub module and import it.
 
