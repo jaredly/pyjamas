@@ -18,10 +18,8 @@ class UnitTest:
         self.assertTrue = self.failUnless
 
     def run(self):
-        print "Unittest.run", self.getName()
         self.getTestMethods()
         for test_method_name in self.test_methods:
-            print "Unittest.run", test_method_name
             test_method=getattr(self, test_method_name)
             self.current_test_name = test_method_name
             self.setUp()
@@ -126,9 +124,6 @@ class UnitTest:
             fg_colour="#000000"
 
         tests_passed=self.tests_completed - self.tests_failed
-        print "in displayStats", sys.platform
-
-
         if sys.platform in ['mozilla', 'ie6', 'opera', 'oldmoz', 'safari']:
             output="<table cellpadding=4 width=100%><tr><td bgcolor='" + bg_colour + "'><font face='arial' size=4 color='" + fg_colour + "'><b>"
         else:

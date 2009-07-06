@@ -35,7 +35,6 @@ class BrowserLinker(linker.BaseLinker):
         if not os.path.exists(self.output):
             os.makedirs(self.output)
         self.merged_public = set()
-        self.visited_modules = {}
 
     def visit_end_platform(self, platform):
         if not platform:
@@ -170,16 +169,12 @@ def build_script():
     global app_platforms
     parser = OptionParser(usage = usage)
     # TODO: compile options
-    #pyjs.add_compile_options(parser)
+    translator.add_compile_options(parser)
+    linker.add_linker_options(parser)
     parser.add_option("-o", "--output", dest="output",
         help="directory to which the webapp should be written")
-    parser.add_option("-j", "--include-js", dest="js_includes", action="append",
-        help="javascripts to load into the same frame as the rest of the script")
-    parser.add_option("-I", "--library_dir", dest="library_dirs",
-        action="append", help="additional paths appended to PYJSPATH")
     parser.add_option("-P", "--platforms", dest="platforms",
         help="platforms to build for, comma-separated")
-
     parser.set_defaults(output="output",
                         js_includes=[],
                         library_dirs=[],
@@ -197,13 +192,15 @@ def build_script():
        app_platforms = options.platforms.lower().split(',')
     print pyjs.path
 
-    translator_arguments=dict(debug=False,
-                              print_statements = True,
-                              function_argument_checking=True,
-                              attribute_checking=True,
-                              source_tracking=False,
-                              line_tracking=False,
-                              store_source=False)
+    translator_arguments=dict(
+        debug=options.debug,
+        print_statements = options.print_statements,
+        function_argument_checking=options.function_argument_checking,
+        attribute_checking=options.attribute_checking,
+        source_tracking=options.source_tracking,
+        line_tracking=options.line_tracking,
+        store_source=options.store_source)
+
     l = BrowserLinker(top_module,
                       output=options.output,
                       platforms=app_platforms,

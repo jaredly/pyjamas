@@ -37,6 +37,8 @@ def module_path(name, path):
 
 class BaseLinker(object):
 
+    platform_parents = {}
+
     def __init__(self, top_module, output='output',
                  debug=False, js_libs=[], platforms=[], path=[],
                  translator_arguments={}):
@@ -49,6 +51,7 @@ class BaseLinker(object):
         self.translator_arguments = translator_arguments
 
     def __call__(self):
+        self.visited_modules = {}
         self.done = {}
         self.dependencies = {}
         self.visit_start()
@@ -81,12 +84,15 @@ class BaseLinker(object):
                     mn, self.dependencies)
             if mn==self.top_module:
                 self.top_module_path = p
-            override_path=None
+            override_paths=[]
             if platform:
-                override_path = module_path('__%s__.%s' % (platform, mn),
-                                            self.path)
-            if override_path:
-                self.visit_module(p, [override_path], platform, module_name=mn)
+                for pl in [platform] + self.platform_parents.get(platform, []):
+                    override_path = module_path('__%s__.%s' % (pl, mn),
+                                                self.path)
+                    if override_path:
+                        override_paths.append(override_path)
+            if override_paths:
+                self.visit_module(p, override_paths, platform, module_name=mn)
             else:
                 self.visit_module(p, [], platform, module_name=mn)
 
@@ -139,4 +145,15 @@ class BaseLinker(object):
 
     def visit_end(self):
         pass
+
+
+def add_linker_options(parser):
+    parser.add_option("-j", "--include-js", dest="js_includes",
+                      action="append", default=[],
+                      help="javascripts to load into the same frame as the rest of the script")
+    parser.add_option("-I", "--library_dir", dest="library_dirs",
+                      default=[],
+                      action="append", help="additional paths appended to PYJSPATH")
+
+
 

@@ -2396,18 +2396,18 @@ def add_compile_options(parser):
                       help="Generate code for print statements"
                       )
 
-    parser.add_option("--function-argument-checking",
+    parser.add_option("--no-function-argument-checking",
                       dest = "function_argument_checking",
-                      action="store_true",
-                      default=False,
-                      help = "Generate code for function argument checking"
+                      action="store_false",
+                      default=True,
+                      help = "Generate no code for function argument checking"
                       )
 
-    parser.add_option("--attribute-checking",
+    parser.add_option("--no-attribute-checking",
                       dest = "attribute_checking",
-                      default=False,
-                      action="store_true",
-                      help = "Generate code for attribute checking"
+                      default=True,
+                      action="store_false",
+                      help = "Generate no code for attribute checking"
                       )
 
     parser.add_option("--source-tracking",

@@ -1,3 +1,4 @@
+
 class List:
     def index(self, value, start=0):
         JS("""

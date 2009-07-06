@@ -706,7 +706,11 @@ class List:
 
     @noSourceTracking
     def __contains__(self, value):
-        return self.index(value) >= 0
+        try:
+            self.index(value)
+        except ValueError:
+            return False
+        return True
 
     @noSourceTracking
     def __iter__(self):
@@ -893,6 +897,7 @@ class Tuple:
 
     @noSourceTracking
     def __contains__(self, value):
+        
         return self.index(value) >= 0
 
     @noSourceTracking
