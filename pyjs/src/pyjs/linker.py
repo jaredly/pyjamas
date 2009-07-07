@@ -41,7 +41,8 @@ class BaseLinker(object):
 
     def __init__(self, top_module, output='output',
                  debug=False, js_libs=[], platforms=[], path=[],
-                 translator_arguments={}):
+                 translator_arguments={},
+                 compile_inplace=False):
         self.js_path = os.path.abspath(output)
         self.path = path + [LIB_PATH]
         self.platforms = platforms
@@ -49,6 +50,7 @@ class BaseLinker(object):
         self.output = os.path.abspath(output)
         self.js_libs = js_libs
         self.translator_arguments = translator_arguments
+        self.compile_inplace = compile_inplace
 
     def __call__(self):
         self.visited_modules = {}
@@ -101,16 +103,24 @@ class BaseLinker(object):
         # look if we have a public dir
         dir_name = os.path.dirname(file_path)
         self.merge_resources(dir_name)
+        if not module_name:
+            import pdb;pdb.set_trace()
         if platform and overrides:
+            plat_suffix = '.__%s__' % platform
             out_file = '%s.__%s__.js' % (file_path[:-3], platform)
         else:
+            plat_suffix = ''
             out_file = '%s.js' % file_path[:-3]
+        if self.compile_inplace:
+            mod_part, extension = os.path.splitext(file_path)
+            out_file = '%s%s.js' % (mod_part, plat_suffix)
+        else:
+            out_file = os.path.join(self.output, 'lib',
+                                    '%s%s.js' % (module_name, plat_suffix))
         if out_file in self.done.get(platform, []):
             return
         # translate if no platform or if we have an override
-        if (   platform is None
-            or (platform and overrides)
-           ):
+        if (platform is None or (platform and overrides)):
             deps = translator.translate([file_path] +  overrides,
                                         out_file,
                                         module_name=module_name,
@@ -135,7 +145,12 @@ class BaseLinker(object):
         pass
 
     def visit_start(self):
-        pass
+        if not os.path.exists(self.output):
+            os.mkdir(self.output)
+        if not self.compile_inplace:
+            lib_dir = os.path.join(self.output, 'lib')
+            if not os.path.exists(lib_dir):
+                os.mkdir(lib_dir)
 
     def visit_start_platform(self, platform):
         pass
@@ -148,6 +163,9 @@ class BaseLinker(object):
 
 
 def add_linker_options(parser):
+    parser.add_option("-o", "--output", dest="output",
+                      help="directory to which the app should be written")
+
     parser.add_option("-j", "--include-js", dest="js_includes",
                       action="append", default=[],
                       help="javascripts to load into the same frame as the rest of the script")

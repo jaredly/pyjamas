@@ -10,20 +10,17 @@ pyjspth = r'%s'
 import os
 import sys
 sys.path[0:0] = [
-  r'%s',
+os.path.join(r'%s', 'pyjs', 'src'),
   ]
-
 import pyjs
-pyjs.path += [os.path.join(pyjspth, 'library'),
-os.path.join(pyjspth, 'library', 'builtins'),
-os.path.join(pyjspth, 'addons'),
-]
-sys.argv.extend(['-D', pyjspth])
+#pyjs.path += [os.path.join(pyjspth, 'library'),
+#os.path.join(pyjspth, 'addons'),
+#]
+#sys.argv.extend(['-D', pyjspth])
 
-import pyjs.build
-
+import pyjs.browser
 if __name__ == '__main__':
-    pyjs.build.main()
+    pyjs.browser.build_script()
 """
 
 pyjscompile = """#!%s

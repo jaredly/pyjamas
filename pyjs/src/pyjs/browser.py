@@ -29,11 +29,10 @@ adapting this to suit your requirements
 class BrowserLinker(linker.BaseLinker):
 
     def visit_start(self):
+        super(BrowserLinker, self).visit_start()
         self.boilerplate_path = None
         self.js_libs.append('_pyjs.js')
         self.js_libs.append('sprintf.js')
-        if not os.path.exists(self.output):
-            os.makedirs(self.output)
         self.merged_public = set()
 
     def visit_end_platform(self, platform):
@@ -171,8 +170,6 @@ def build_script():
     # TODO: compile options
     translator.add_compile_options(parser)
     linker.add_linker_options(parser)
-    parser.add_option("-o", "--output", dest="output",
-        help="directory to which the webapp should be written")
     parser.add_option("-P", "--platforms", dest="platforms",
         help="platforms to build for, comma-separated")
     parser.set_defaults(output="output",

@@ -61,6 +61,7 @@ class SpidermonkeyLinker(linker.BaseLinker):
         super(SpidermonkeyLinker, self).__init__(*args, **kwargs)
 
     def visit_start(self):
+        super(SpidermonkeyLinker, self).visit_start()
         self.js_libs.append('_pyjs.js')
         self.js_libs.append('sprintf.js')
         self.merged_public = set()
@@ -79,7 +80,8 @@ class SpidermonkeyLinker(linker.BaseLinker):
 
     def visit_end(self):
         done = self.done[PLATFORM]
-        out_file = open(self.output, 'w')
+        out_file = open(
+            os.path.join(self.output, self.top_module + '.js'), 'w')
         out_file.write(APP_TEMPLATE % dict(
             module_files=str(done)[1:-1],
             js_lib_files=str(self.js_libs)[1:-1],
@@ -97,16 +99,11 @@ def build_script():
     # override the default because we want print
     parser.set_defaults(print_statements=True)
     linker.add_linker_options(parser)
-    parser.add_option("-o", "--output", dest="output",
-                      help="output file")
     options, args = parser.parse_args()
     if len(args) != 1:
         parser.error("incorrect number of arguments")
 
     top_module = args[0]
-    if not options.output:
-        options.output = os.path.abspath(top_module + '.js')
-    print "Using %r as output" % options.output
     for d in options.library_dirs:
         pyjs.path.append(os.path.abspath(d))
 

@@ -39,6 +39,12 @@ Let us generate some python code.
 
     >>> l()
 
+By default the javascript code is compiled to a subdirectory in the
+output directory.
+
+    >>> sorted(os.listdir(os.path.join(output, 'lib')))
+    ['mypackage.index.js', 'mypackage.js', 'pyjslib.__mozilla__.js', 'pyjslib.js']
+
     >>> out_file = os.path.join(output, 'mypackage.index.ie6.cache.html')
     >>> print file(out_file).read()
     <html>...

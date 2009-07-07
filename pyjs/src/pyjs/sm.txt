@@ -33,9 +33,10 @@ compiles just one.
     >>> os.listdir(tmp)
     ['LibTest.js']
 
-    >>> print open(output).read()
+    >>> out_file = os.path.join(output, 'LibTest.js')
+    >>> print open(out_file).read()
     var...
-    load('...builtin/pyjslib.__spidermonkey__.js', ...
+    load('...pyjslib.__spidermonkey__.js', ...
     load('.../public/_pyjs.js', '...sprintf.js');
     <BLANKLINE>
     pyjslib('pyjslib');
