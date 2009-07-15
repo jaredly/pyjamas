@@ -48,10 +48,25 @@ class object:
 
 @noSourceTracking
 def __import__(path, context, module_name=None):
+    # Here we import (initialize) all modules given by a python module path.
+    # The path can be relative to context which is itself a python module
+    # path.
+    # We always return the base module/package from path.
+    # Given this package structure :
+    #    a/b
+    #    c
+    #    d/a/b
+    # Example:
+    #   __import__('a.b', 'c')   -> module a is returned.
+    #   __import__('a.b', 'd')   -> module d/a is returned.
+    #   __import__('d.a.b', 'a') -> module d is returned.
     available = list(JS("$pyjs.available_modules"))
+    module = None
     mod_path = None
+    return_mod_path = None
     is_mod = False
     if '.' in context:
+        # our context lives in a package
         package = '.'.join(context.split('.')[:-1])
         relative_ns = package + '.' + path
         if relative_ns in available:
@@ -64,7 +79,9 @@ def __import__(path, context, module_name=None):
                 relative_ns = '.'.join(relative_ns.split('.')[:-1])
                 if relative_ns in available:
                     mod_path = relative_ns
+        return_mod_path = package + '.' + path.split('.')[0]
     if not mod_path:
+        # it must be an absolute path
         if path in available:
             mod_path = path
             is_mod = True
@@ -73,6 +90,7 @@ def __import__(path, context, module_name=None):
                 ns = '.'.join(path.split('.')[:-1])
                 if ns in available:
                     mod_path = ns
+        return_mod_path = path.split('.')[0]
     if not mod_path:
         raise ImportError(
             "No module named " + path + ' (context=' + context + ')')
@@ -83,25 +101,22 @@ def __import__(path, context, module_name=None):
     for i, name in enumerate(parts):
         importName += name
         JS("module = $pyjs.loaded_modules[importName];")
-        if isUndefined(module):
-            print "error:", path, names, name, available
+        if JS("typeof module == 'undefined'"):
+            print "error:", path, name, available
             raise ImportError(
-                "No module named " + importName + ', ' + path + ', ' + context)
+                "No module named " + importName + ', ' + path + ' in context ' + context)
         if l==i+1:
+            # This is the last module, we set the module name here
             module(module_name)
         else:
             module(None)
         importName += '.'
 
     # we have no package, so no relative imports possible
-    module = JS("$pyjs.loaded_modules[mod_path];")
-
+    module = JS("$pyjs.loaded_modules[return_mod_path];")
     module()
-    if is_mod:
-        return module
-    else:
-        k = path.split('.')[-1]
-        return JS('module[k]')
+    return module
+
 
 # FIXME: dynamic=1, async=False are useless here (?). Only dynamic modules 
 # are loaded with load_module and it's always "async"
@@ -1366,8 +1381,8 @@ def float(text):
 
 @noSourceTracking
 def int(text, radix=None):
+    _radix = radix
     JS("""
-    var _radix = radix;
     if (radix === null) {
         _radix = 10
     } else {
@@ -1392,7 +1407,7 @@ def len(object):
 
 @noSourceTracking
 def isinstance(object_, classinfo):
-    if pyjslib.isUndefined(object_):
+    if isUndefined(object_):
         return False
     JS("""if (classinfo.__name__ == 'int') {
             return pyjslib.isNumber(object_); /* XXX TODO: check rounded? */
@@ -1402,7 +1417,7 @@ def isinstance(object_, classinfo):
             return pyjslib.isString(object_);
             }
         """)
-    if not pyjslib.isObject(object_):
+    if not isObject(object_):
         return False
     if _isinstance(classinfo, Tuple):
         for ci in classinfo:
@@ -1702,127 +1717,134 @@ def sprintf(strng, args):
         return arg
 
     def formatarg(flags, minlen, precision, conversion, param):
-            subst = ''
-            numeric = True
-            if not minlen:
-                minlen=0
+        subst = ''
+        numeric = True
+        if not minlen:
+            minlen=0
+        else:
+            minlen = int(minlen)
+        if not precision:
+            precision = None
+        else:
+            precision = int(precision)
+        left_padding = 1
+        if flags.find('-') >= 0:
+            left_padding = 0
+        if conversion == '%':
+            numeric = False
+            subst = '%'
+        elif conversion == 'c':
+            numeric = False
+            subst = chr(int(param))
+        elif conversion == 'd' or conversion == 'i' or conversion == 'u':
+            subst = str(int(param))
+        elif conversion == 'e':
+            if precision is None:
+                precision = 6
+            JS("""
+            subst = re_exp.exec(String(param.toExponential(precision)));
+            if (subst[3].length == 1) {
+                subst = subst[1] + subst[2] + '0' + subst[3];
+            } else {
+                subst = subst[1] + subst[2] + subst[3];
+            }""")
+        elif conversion == 'E':
+            if precision is None:
+                precision = 6
+            JS("""
+            subst = re_exp.exec(String(param.toExponential(precision)).toUpperCase());
+            if (subst[3].length == 1) {
+                subst = subst[1] + subst[2] + '0' + subst[3];
+            } else {
+                subst = subst[1] + subst[2] + subst[3];
+            }""")
+        elif conversion == 'f':
+            if precision is None:
+                precision = 6
+            JS("""
+            subst = String(parseFloat(param).toFixed(precision));""")
+        elif conversion == 'F':
+            if precision is None:
+                precision = 6
+            JS("""
+            subst = String(parseFloat(param).toFixed(precision)).toUpperCase();""")
+        elif conversion == 'g':
+            if flags.find('#') >= 0:
+                if precision is None:
+                    precision = 6
+            if param >= 1E6 or param < 1E-5:
+                JS("""
+                subst = String(precision == null ? param.toExponential() : param.toExponential().toPrecision(precision));""")
             else:
-                minlen = int(minlen)
-            if not precision:
-                precision = None
+                JS("""
+                subst = String(precision == null ? parseFloat(param) : parseFloat(param).toPrecision(precision));""")
+        elif conversion == 'G':
+            if flags.find('#') >= 0:
+                if precision is None:
+                    precision = 6
+            if param >= 1E6 or param < 1E-5:
+                JS("""
+                subst = String(precision == null ? param.toExponential() : param.toExponential().toPrecision(precision)).toUpperCase();""")
             else:
-                precision = int(precision)
-            left_padding = 1
-            if flags.find('-') >= 0:
-                left_padding = 0
-            if conversion == '%':
-                numeric = False
-                subst = '%'
-            elif conversion == 'c':
-                numeric = False
-                subst = chr(int(param))
-            elif conversion == 'd' or conversion == 'i' or conversion == 'u':
-                subst = str(int(param))
-            elif conversion == 'e':
-                if precision is None:
-                    precision = 6
                 JS("""
-                subst = re_exp.exec(String(param.toExponential(precision)));
-                if (subst[3].length == 1) {
-        	    subst = subst[1] + subst[2] + '0' + subst[3];
-		} else {
-        	    subst = subst[1] + subst[2] + subst[3];
-		}""")
-            elif conversion == 'E':
-                if precision is None:
-                    precision = 6
-                JS("""
-                subst = re_exp.exec(String(param.toExponential(precision)).toUpperCase());
-                if (subst[3].length == 1) {
-        	    subst = subst[1] + subst[2] + '0' + subst[3];
-		} else {
-        	    subst = subst[1] + subst[2] + subst[3];
-		}""")
-            elif conversion == 'f':
-                if precision is None:
-                    precision = 6
-                JS("""
-                subst = String(parseFloat(param).toFixed(precision));""")
-            elif conversion == 'F':
-                if precision is None:
-                    precision = 6
-                JS("""
-                subst = String(parseFloat(param).toFixed(precision)).toUpperCase();""")
-            elif conversion == 'g':
-                if flags.find('#') >= 0:
-                    if precision is None:
-                        precision = 6
-                if param >= 1E6 or param < 1E-5:
-                    JS("""
-                    subst = String(precision == null ? param.toExponential() : param.toExponential().toPrecision(precision));""")
-                else:
-                    JS("""
-                    subst = String(precision == null ? parseFloat(param) : parseFloat(param).toPrecision(precision));""")
-            elif conversion == 'G':
-                if flags.find('#') >= 0:
-                    if precision is None:
-                        precision = 6
-                if param >= 1E6 or param < 1E-5:
-                    JS("""
-                    subst = String(precision == null ? param.toExponential() : param.toExponential().toPrecision(precision)).toUpperCase();""")
-                else:
-                    JS("""
-                    subst = String(precision == null ? parseFloat(param) : parseFloat(param).toPrecision(precision)).toUpperCase().toUpperCase();""")
-            elif conversion == 'r':
-                numeric = False
-                subst = repr(param)
-            elif conversion == 's':
-                numeric = False
-                subst = str(param)
-            elif conversion == 'o':
-                param = int(param)
-                JS("""
-                subst = param.toString(8);""")
-                if flags.find('#') >= 0 and subst != '0':
-                    subst = '0' + subst
-            elif conversion == 'x':
-                param = int(param)
-                JS("""
-                subst = param.toString(16);""")
-                if flags.find('#') >= 0:
-                    if left_padding:
-                        subst = subst.rjust(minlen - 2, '0')
-                    subst = '0x' + subst
-            elif conversion == 'X':
-                param = int(param)
-                JS("""
-                subst = param.toString(16).toUpperCase();""")
-                if flags.find('#') >= 0:
-                    if left_padding:
-                        subst = subst.rjust(minlen - 2, '0')
-                    subst = '0X' + subst
-            else:
-                raise ValueError("unsupported format character '" + conversion + "' ("+hex(ord(conversion))+") at index " + (strlen - len(remainder) - 1))
-            if minlen and len(subst) < minlen:
-                padchar = ' '
-                if numeric and left_padding and flags.find('0') >= 0:
-                    padchar = '0'
+                subst = String(precision == null ? parseFloat(param) : parseFloat(param).toPrecision(precision)).toUpperCase().toUpperCase();""")
+        elif conversion == 'r':
+            numeric = False
+            subst = repr(param)
+        elif conversion == 's':
+            numeric = False
+            subst = str(param)
+        elif conversion == 'o':
+            param = int(param)
+            JS("""
+            subst = param.toString(8);""")
+            if flags.find('#') >= 0 and subst != '0':
+                subst = '0' + subst
+        elif conversion == 'x':
+            param = int(param)
+            JS("""
+            subst = param.toString(16);""")
+            if flags.find('#') >= 0:
                 if left_padding:
-                    subst = subst.rjust(minlen, padchar)
-                else:
-                    subst = subst.ljust(minlen, padchar)
-            return subst
+                    subst = subst.rjust(minlen - 2, '0')
+                subst = '0x' + subst
+        elif conversion == 'X':
+            param = int(param)
+            JS("""
+            subst = param.toString(16).toUpperCase();""")
+            if flags.find('#') >= 0:
+                if left_padding:
+                    subst = subst.rjust(minlen - 2, '0')
+                subst = '0X' + subst
+        else:
+            raise ValueError("unsupported format character '" + conversion + "' ("+hex(ord(conversion))+") at index " + (strlen - len(remainder) - 1))
+        if minlen and len(subst) < minlen:
+            padchar = ' '
+            if numeric and left_padding and flags.find('0') >= 0:
+                padchar = '0'
+            if left_padding:
+                subst = subst.rjust(minlen, padchar)
+            else:
+                subst = subst.ljust(minlen, padchar)
+        return subst
 
     def sprintf_list(strng, args):
+        a = None
+        left = None
+        flags = None
+        precision = None
+        conversion = None
+        minlen = None
+        minlen_type = None
         while remainder:
             JS("""
-            var a = re_list.exec(remainder);""")
+            a = re_list.exec(remainder);""")
             if a is None:
                 result.append(remainder)
                 break;
             JS("""
-            var left = a[1], flags = a[2];
-            var minlen = a[3], precision = a[5], conversion = a[6];
+            left = a[1], flags = a[2];
+            minlen = a[3], precision = a[5], conversion = a[6];
             remainder = a[7];
             if (typeof minlen == 'undefined') minlen = null;
             if (typeof precision == 'undefined') precision = null;
@@ -1831,7 +1853,7 @@ def sprintf(strng, args):
             result.append(left)
             if minlen == '*':
                 minlen = next_arg()
-                JS("var minlen_type = typeof(minlen);")
+                JS("minlen_type = typeof(minlen);")
                 if minlen_type != 'number' or \
                    int(minlen) != minlen:
                     raise TypeError('* wants int')
@@ -1842,15 +1864,22 @@ def sprintf(strng, args):
     def sprintf_dict(strng, args):
         arg = args
         argidx += 1
+        a = None
+        key = None
+        left = None
+        flags = None
+        precision = None
+        conversion = None
+        minlen = None
         while remainder:
             JS("""
-            var a = re_dict.exec(remainder);""")
+            a = re_dict.exec(remainder);""")
             if a is None:
                 result.append(remainder)
                 break;
             JS("""
-            var left = a[1], key = a[2], flags = a[3];
-            var minlen = a[4], precision = a[5], conversion = a[6];
+            left = a[1], key = a[2], flags = a[3];
+            minlen = a[4], precision = a[5], conversion = a[6];
             remainder = a[7];
             if (typeof minlen == 'undefined') minlen = null;
             if (typeof precision == 'undefined') precision = null;
@@ -1863,8 +1892,9 @@ def sprintf(strng, args):
                 param = arg[key]
             result.append(formatarg(flags, minlen, precision, conversion, param))
 
+    a = None
     JS("""
-    var a = re_dict.exec(strng);
+    a = re_dict.exec(strng);
 """)
     if a is None:
         if constructor != "Tuple":
@@ -1895,7 +1925,6 @@ def printFunc(objs, newline):
 def type(clsname, bases=None, methods=None):
     """ creates a class, derived from bases, with methods and variables
     """
-
     JS(" var mths = {}; ")
     if methods:
         for k in methods.keys():
@@ -1908,6 +1937,7 @@ def type(clsname, bases=None, methods=None):
     JS(" return pyjs_type(clsname, bss, mths); ")
 
 def pow(x, y, z = None):
+    p = None
     JS("p = Math.pow(x, y);")
     if z is None:
         return float(p)
@@ -1916,23 +1946,27 @@ def pow(x, y, z = None):
 def hex(x):
     if int(x) != x:
         raise TypeError("hex() argument can't be converted to hex")
+    r = None
     JS("r = '0x'+x.toString(16);")
     return str(r)
 
 def oct(x):
     if int(x) != x:
         raise TypeError("oct() argument can't be converted to oct")
+    r = None
     JS("r = '0'+x.toString(8);")
     return str(r)
 
 def round(x, n = 0):
     n = pow(10, n)
+    r = None
     JS("r = Math.round(n*x)/n;")
     return float(r)
 
 def divmod(x, y):
     if int(x) == x and int(y) == y:
         return (int(x / y), int(x % y))
+    f = None
     JS("f = Math.floor(x / y);")
     f = float(f)
     return (f, x - f * y)
