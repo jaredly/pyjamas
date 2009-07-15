@@ -1,0 +1,23 @@
+Introduction: Pyjamas EuroPython 2009
+Pyjamas: About Pyjamas (for Web Browsers)
+What is it: What does Pyjamas do?
+Whats in it: What's in Pyjamas (for Web Browsers)?
+What is PyJD: What's Pyjamas Desktop?
+What is PyJW: What's Pyjamas for Web Servers?
+Documentation: Where's the Documentation?
+Demonstrations: Quick Demos of Pyjamas Examples
+Demo Sites: Quick Demos of Example Sites
+Hello World: Show me some coooode.
+Misconceptions: FAQ - Why can't I do ... X?
+Frameworks: How do you talk to the rest of the world?
+Alternatives: Porting Pyjamas to Desktop
+PyGtk2: Is PyGtk2 good enough to port Pyjamas to?
+PyQt4: Is PyQt4 good enough to port Pyjamas to?
+DOM Modelling: PyJD - DOM Model manipulation Technologies
+Webkit: What Webkit-glib and PyWebkitGtk give us
+Python KDE: Grand-Daddy of Webkit.  Respect.
+XulRunner: How not to win friends and influence people
+Compiler Tech: Pyjamas strengths and weaknesses
+Reverse Tech: Reverse compilation (speedup Pyjamas Dev)
+Future: On the TODO List / Roadmap
+Cool Stuff: Some cool ideas to use Pyjamas for

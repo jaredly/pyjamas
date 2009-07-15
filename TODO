@@ -1,0 +1,38 @@
+=====
+Todos
+=====
+
+After the europython merge we have still some things to change.
+
+- test on windows (who is willing?)
+
+- fix debug stuff in translated code
+
+- fix all example build scripts
+
+- test all examples
+
+- move all python library modules implemented for js into pyjs/lib
+
+- move all builtin modules implemented for js into pyjs/builtin
+
+- fix v8 runner (implement linker)
+
+- evtl. fix spidermonkey runner, but there is a linker that already
+  uses the js commandline interface from spidermonkey
+
+  [lkcl: yeah, but the commandline interface can't interact with
+   python modules.  i strongly recommend dropping cmd-line and using
+   python-spidermonkey.]
+
+From http://code.google.com/p/pyjamas/issues, for 0.6 release:
+
+184 Defect      current apps setup dog-slow compared to 0.4 and 0.5
+
+97  Enhancement ui.Tree Widgets have too much whitespace around their contents
+
+49  Defect      __pygwt_onBadProperty is not defined        
+146 ----        pyjsbuild --version reports ancient date     
+166 ----        If I use build.sh -c from the trunk I get a traceback about md5
+176 ----        -c and --cache-buster options have gone from build   
+

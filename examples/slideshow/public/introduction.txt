@@ -1,0 +1,12 @@
+= Pyjamas Family =
+ * Pyjamas Projects
+   ** Pyjamas for Browsers (Client-side: AJAX)
+   ** Pyjamas/Desktop (Client-side: Desktops and Embedded)
+   ** Pyjamas/Web (Server-side)
+ * Common misconceptions
+ * Development API (code! documentation! hooray!)
+ * Comparison of alternative Widget API frameworks
+ * Demonstrations and Examples (more code?)
+ * Compiler Technology
+ * Future (TODO)
+Lots to cover! Pay attention 007...

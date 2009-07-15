@@ -1,0 +1,16 @@
+ * HelloWorld (duh).
+   ** 9 lines of Python. 9 of HTML.  hurrah.
+ * DynaTable
+   ** Shows loading of PHP content
+   ** RootPanel("html_tag_id") - very useful
+ * JSONRPCExample
+   ** Very important example!
+   ** Shows MVC necessity
+   ** Web.py demo - http://lkcl.net/webpy.jsonrpc.tgz
+ * KitchenSink
+   ** Shows off most of the widgets
+   ** SinkList itself quite useful
+   ** Shows how to do "History" frame
+ * Mail
+   ** Shows possibilities
+   ** Shows off Window "resize"

@@ -1,0 +1,10 @@
+ * Porting Pyjamas to Desktop
+   ** Use a standard existing Widget set
+   ** PyQt4, PyGtk2, IronPython (Gtk#), wxWidgets
+ * What features are required?
+   * Must support HTML (somehow)
+   * Must really support CSS (somehow, or in some form)
+   * Must have global and per-widget event-handling
+   * Must be able to uniquely identify each widget
+
+Do the existing widget sets cut the mustard?

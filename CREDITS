@@ -1,0 +1,54 @@
+Lead Developer
+
+2006-2007: James Tauber - jtauber@jtauber.com
+2008-2009: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+
+Other Commmitters
+
+Willie Gollino - wgollino@yahoo.com
+Dobes Vandermeer - dobesv@gmail.com
+Bernd Dorn - <bernd.dorn@lovelysystems.com>
+Luis Pamirez
+Erik Westra - ewestra [at] gmail [dot] com
+
+Other Contributors
+
+Vicente J. Ruiz Jurado - vjrj@ourproject.org
+Gerard Labadie - gerard.labadie@gmail.com
+Stephan Diehl - stephan.diehl@gmx.net
+John Lehman - j1o1h1n@gmail.com
+Jürgen Kartnaller - <kartnaller@lovelysystems.com>
+G Clinch
+Kees Boss
+Oisin Mulvihill
+Laszlo Krekacs - khiraly@gmail.com
+Stefan Schwarzer - <sschwarzer@sschwarzer.net>
+
+
+Erik gets a special mention for the contribution of the "Showcase".
+
+Luis did the porting of gtk to pyjamas: I'm sorry we haven't had time
+to reincorporate it into pyjamas 0.4 or above yet, Luis!  It'll happen
+eventually.
+
+Bernd's work on the core python compiler has been absolutely invaluable.
+
+G Clinch ported the DisclosurePanel from GWT
+
+Kees Boss added multiple inheritance support and has just gone mad with
+the python-esque improvements since.
+
+Laszlo Krekacs has been adding little bits of language support, and also
+ported Toggle, Custom and Push buttons from GWT 1.6
+
+Stefan is a recent contributor since Europython and has been adding
+"formal correctness" patches that are more in line with python 2.5 and 2.6
+and python coding standards.
+
+James - thank you for kick-starting this project.
+
+
+And of course, a huge amount of thanks goes to Google and the engineers
+there that produced GWT, on which pyjamas is originally based.
+
