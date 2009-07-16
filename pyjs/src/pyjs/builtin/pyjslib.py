@@ -48,7 +48,18 @@ class object:
 
 @noSourceTracking
 def __import__(searchList, path, context, module_name=None):
-    available = list(JS("$pyjs.available_modules"))
+    available = JS("$pyjs.available_modules_dict")
+    if isUndefined(available):
+        # Convert the $pyjs.available_modules js array to 
+        # a Python dictionary. Lookups in the dictionary with has_key are 
+        # way faster than a __contains__ lookup in a list.
+        # This hack needs attention if the $pyjs.available_modules gets
+        # updated after creation of the dictionary
+        available = {}
+        for m in list(JS("$pyjs.available_modules")):
+            available[m] = False
+        # Store the dictionary for later use
+        JS("$pyjs.available_modules_dict = available;")
     searchList = list(searchList)
     found = False
     for mod_path in searchList:
@@ -58,8 +69,14 @@ def __import__(searchList, path, context, module_name=None):
     if not found:
         raise ImportError(
             "No module named " + path + ' (context=' + context + ')')
-    # initialize all modules/packages
     module = None
+    try:
+        module = JS("$pyjs.loaded_modules[mod_path]")
+        if not module.__was_initialized__:
+            return
+    except:
+        module = None
+    # initialize all modules/packages
     importName = ''
     parts = mod_path.split('.')
     l = len(parts)
@@ -67,7 +84,6 @@ def __import__(searchList, path, context, module_name=None):
         importName += name
         JS("module = $pyjs.loaded_modules[importName];")
         if JS("typeof module == 'undefined'"):
-            print "error:", path, name, available
             raise ImportError(
                 "No module named " + importName + ', ' + path + ' in context ' + context)
         if i == 0:
