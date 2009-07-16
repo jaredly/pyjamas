@@ -32,10 +32,12 @@ modules are there.
     >>> imports = os.path.join(tmp, 'imports.py')
     >>> f = file(imports, 'w')
     >>> f.write("""
+    ... import a
     ... from x.z import y, p as pp
     ... import a.b
     ... a.b.something()
     ... import a
+    ... import a as a_foo
     ... a.something()
     ... a = 0
     ... a += 1
@@ -61,6 +63,8 @@ modules are there.
     ...                      source_tracking=False,
     ...                      line_tracking=False,
     ...                      store_source=False)
+    [...
+
     ['x.z.y', 'x', 'x.z', 'x.z.p', 'a.b', 'a', 'a.b.c', 'z']
 
     >>> print file(out_file).read()

@@ -898,38 +898,67 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
         # XXX: hack for in-function checking, we should have another
         # object to check our scope
         local = local and self.option_stack
-        self._doImport(node.names, local)
+        self._doImport(node.names, local, True)
 
-    def _doImport(self, names, local):
+    def _doImport(self, names, local, assignBase):
         for importName, importAs in names:
-            # special module to help make pyjamas modules loadable in
-            # the python interpreter
             if importName == '__pyjamas__':
                 continue
-            # add to dependencies
-            self.add_imported_module(importName)
-            package_name = importName.split('.')[0]
-            if importAs:
-                ass_name = importAs
-            else:
-                ass_name = package_name
+            # "searchList" contains a list of possible module names :
+            #   We create the list at compile time to save runtime.
+            searchList = []
+            context = self.raw_module_name
+            if '.' in context:
+                # our context lives in a package so it is possible to have a
+                # relative import
+                package = context.rsplit('.', 1)[0]
+                relName = package + '.' + importName
+                searchList.append(relName)
+                if '.' in importName:
+                    searchList.append(relName.rsplit('.', 1)[0])
+            # the absolute path
+            searchList.append(importName)
+            if '.' in importName:
+                searchList.append(importName.rsplit('.', 1)[0])
+
             mod = self.lookup(importName)
-            base_mod = self.lookup(importName.split('.')[0])
-            if mod[0] != 'module' or base_mod != 'module':
-                if local:
-                    jsname = ass_name
-                    lhs = 'var %s =' % jsname
-                    jsname_mod = jsname
-                else:
-                    jsname_mod = '.'.join((self.raw_module_name, package_name))
-                    jsname = '.'.join((self.raw_module_name, ass_name))
-                    lhs = '%s =' %  jsname
-                self.add_lookup("variable", ass_name, jsname)
-                stmt = "%s pyjslib.__import__('%s', '%s')" % (
-                                        lhs, importName, self.raw_module_name)
+            package_mod = self.lookup(importName.split('.', 1)[0])
+            if (   mod[0] != 'module'
+                or (assignBase and package_mod[0] != 'module')
+               ):
+                # the import statement
+                stmt = "pyjslib.__import__([%s], '%s', '%s')" % (
+                            ', '.join(["'%s'"% n for n in searchList]),
+                            importName,
+                            self.raw_module_name,
+                            )
                 print >> self.output, self.spacing(), stmt
-                self.add_lookup("module", importName, jsname)
-                self.add_lookup("variable", importName.split('.')[0], jsname_mod)
+                self.add_lookup("module", importName, importName)
+                self.add_imported_module(importName)
+            if assignBase:
+                # get the name in scope
+                package_name = importName.split('.')[0]
+                if importAs:
+                    ass_name = importAs
+                else:
+                    ass_name = package_name
+                var = self.lookup(ass_name)
+                if var[0] != 'variable' or local:
+                    if local:
+                        jsname_mod = ass_name
+                        jsname = ass_name
+                        lhs = 'var %s =' % jsname
+                    else:
+                        jsname_mod = '.'.join((self.raw_module_name, package_name))
+                        jsname = '.'.join((self.raw_module_name, ass_name))
+                        lhs = '%s =' %  jsname
+                    if importAs:
+                        mod_name = importName
+                    else:
+                        mod_name = ass_name
+                    stmt = '%s $pyjs.__modules__.%s'% (lhs, mod_name)
+                    print >> self.output, self.spacing(), stmt
+                    self.add_lookup("module", ass_name, jsname)
 
     def _from(self, node, local=False):
         if node.modname == '__pyjamas__':
@@ -941,18 +970,17 @@ var %s = arguments.length >= %d ? arguments[arguments.length-1] : arguments[argu
         local = local and self.option_stack
         for name in node.names:
             sub = node.modname + '.' + name[0]
-            self._doImport(((sub, None),), local)
+            self._doImport(((sub, None),), local, False)
             ass_name = name[1] or name[0]
             if local:
                 lhs = 'var %s =' % ass_name
                 jsname = ass_name
                 self.add_lookup("variable", ass_name, ass_name)
-                rhs = '.'.join((node.modname, name[0]))
             else:
                 jsname = "%s.%s" % (self.raw_module_name, ass_name)
                 lhs = '%s =' %  jsname
                 self.add_lookup("variable", ass_name, jsname)
-                rhs = '.'.join((self.raw_module_name, node.modname, name[0]))
+            rhs = '.'.join(('$pyjs', '__modules__', node.modname, name[0]))
             print >> self.output, self.spacing(), "%s %s;" % (lhs, rhs)
 
     def _function(self, node, local=False):

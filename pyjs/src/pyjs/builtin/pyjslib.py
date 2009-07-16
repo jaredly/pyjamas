@@ -47,54 +47,19 @@ class object:
 #     return None
 
 @noSourceTracking
-def __import__(path, context, module_name=None):
-    # Here we import (initialize) all modules given by a python module path.
-    # The path can be relative to context which is itself a python module
-    # path.
-    # We always return the base module/package from path.
-    # Given this package structure :
-    #    a/b
-    #    c
-    #    d/a/b
-    # Example:
-    #   __import__('a.b', 'c')   -> module a is returned.
-    #   __import__('a.b', 'd')   -> module d/a is returned.
-    #   __import__('d.a.b', 'a') -> module d is returned.
+def __import__(searchList, path, context, module_name=None):
     available = list(JS("$pyjs.available_modules"))
-    module = None
-    mod_path = None
-    return_mod_path = None
-    is_mod = False
-    if '.' in context:
-        # our context lives in a package
-        package = '.'.join(context.split('.')[:-1])
-        relative_ns = package + '.' + path
-        if relative_ns in available:
-            mod_path = relative_ns
-            is_mod = True
-        else:
-            # look if its a global variable, this is only possible if
-            # a dot is in the path
-            if '.' in path:
-                relative_ns = '.'.join(relative_ns.split('.')[:-1])
-                if relative_ns in available:
-                    mod_path = relative_ns
-        return_mod_path = package + '.' + path.split('.')[0]
-    if not mod_path:
-        # it must be an absolute path
-        if path in available:
-            mod_path = path
-            is_mod = True
-        else:
-            if '.' in path:
-                ns = '.'.join(path.split('.')[:-1])
-                if ns in available:
-                    mod_path = ns
-        return_mod_path = path.split('.')[0]
-    if not mod_path:
+    searchList = list(searchList)
+    found = False
+    for mod_path in searchList:
+        if mod_path in available:
+            found = True
+            break
+    if not found:
         raise ImportError(
             "No module named " + path + ' (context=' + context + ')')
     # initialize all modules/packages
+    module = None
     importName = ''
     parts = mod_path.split('.')
     l = len(parts)
@@ -105,17 +70,14 @@ def __import__(path, context, module_name=None):
             print "error:", path, name, available
             raise ImportError(
                 "No module named " + importName + ', ' + path + ' in context ' + context)
+        if i == 0:
+            JS("$pyjs.__modules__[importName] = module")
         if l==i+1:
             # This is the last module, we set the module name here
             module(module_name)
         else:
             module(None)
         importName += '.'
-
-    # we have no package, so no relative imports possible
-    module = JS("$pyjs.loaded_modules[return_mod_path];")
-    module()
-    return module
 
 
 # FIXME: dynamic=1, async=False are useless here (?). Only dynamic modules 
